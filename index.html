@@ -26,13 +26,6 @@
   <link rel="icon" type="image/png" sizes="32x32" href="/icons/favicon-32.png">
   <link rel="icon" type="image/svg+xml" href="/icons/icon.svg">
   <title>CoDH App - Integrated Request System</title>
-  <!-- Tailwind CSS CDN -->
-  <script src="https://cdn.tailwindcss.com"></script>
-  <!-- React & ReactDOM CDN -->
-  <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
-  <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
-  <!-- Babel Standalone for JSX compilation -->
-  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
   <style>
     html, body, #root {
       min-height: 100%;
@@ -697,6 +690,13 @@
     </div>
   </div>
   <div id="root"></div>
+  <script>
+    document.getElementById('app-launch-screen').dataset.startedAt = String(performance.now());
+  </script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 
 
   <script type="text/babel">
@@ -5250,7 +5250,9 @@
     const launchScreen = document.getElementById('app-launch-screen');
     if (launchScreen) {
       const dismissLaunchScreen = () => {
-        window.setTimeout(() => launchScreen.classList.add('is-leaving'), Math.max(0, 5000 - performance.now()));
+        const startedAt = Number(launchScreen.dataset.startedAt);
+        const elapsed = performance.now() - startedAt;
+        window.setTimeout(() => launchScreen.classList.add('is-leaving'), Math.max(0, 5000 - elapsed));
       };
       if (document.readyState === 'complete') dismissLaunchScreen();
       else window.addEventListener('load', dismissLaunchScreen, { once: true });
