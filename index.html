@@ -294,6 +294,15 @@
       position: relative;
     }
 
+    #admin-role-options {
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: none;
+    }
+
+    #admin-role-options::-webkit-scrollbar {
+      display: none;
+    }
+
     .tetris-game-over-overlay {
       position: absolute;
       z-index: 20;
@@ -953,7 +962,6 @@
       user?.role === 'Department Head' && (user.headOfDept || user.dept) === 'Human Resource Department';
 
     const IS_LOCAL_DEMO = window.location.port === '4173';
-    const DEMO_ACCOUNT = { email: 'admin@codh.local' };
     const CSC_LEAVE_TYPES = [
       'Vacation Leave',
       'Mandatory/Forced Leave',
@@ -1075,7 +1083,7 @@
       const [currentUser, setCurrentUser] = useState(savedSession?.user || null);
       const [authMode, setAuthMode] = useState('signin');
       
-      const [loginEmail, setLoginEmail] = useState(IS_LOCAL_DEMO ? DEMO_ACCOUNT.email : 'kheanlisondrafinal@gmail.com');
+      const [loginEmail, setLoginEmail] = useState('');
       const [loginPassword, setLoginPassword] = useState('');
 
       const [regForm, setRegForm] = useState({
@@ -2437,11 +2445,11 @@
               </div>
 
               {authMode === 'signin' ? (
-                <form onSubmit={handleLogin} className="space-y-4">
+                <form onSubmit={handleLogin} autoComplete="off" className="space-y-4">
                   <div>
                     <label className="text-xs text-slate-300 block mb-1">Email Address</label>
                     <input 
-                      type="email" required value={loginEmail} 
+                      type="email" required autoComplete="off" value={loginEmail} 
                       onChange={e => setLoginEmail(e.target.value)}
                       placeholder="Enter your email"
                       className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-emerald-500"
@@ -2450,7 +2458,7 @@
                   <div>
                     <label className="text-xs text-slate-300 block mb-1">Password</label>
                     <input 
-                      type="password" required value={loginPassword} 
+                      type="password" required autoComplete="off" value={loginPassword} 
                       onChange={e => setLoginPassword(e.target.value)}
                       placeholder="Enter your password"
                       className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-emerald-500"
@@ -2758,13 +2766,13 @@
 
             {/* ONLY ADMIN CAN SWITCH ROLES NOW */}
             {isAdminAccount && (
-              <div className="mx-3 my-2 lg:my-4 p-2.5 lg:p-3 bg-slate-900 rounded-xl border border-slate-800">
+              <div className="mx-3 my-2 p-2 bg-slate-900 rounded-xl border border-slate-800">
                 <button
                   type="button"
                   aria-expanded={isRoleSimulationOpen}
                   aria-controls="admin-role-options"
                   onClick={() => setIsRoleSimulationOpen(open => !open)}
-                  className="w-full min-h-10 flex items-center justify-between gap-3 px-1 text-left rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  className="w-full min-h-8 flex items-center justify-between gap-2 px-1 text-left rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
                 >
                   <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Role Simulation</span>
                   <span className="flex items-center gap-2">
@@ -2773,7 +2781,7 @@
                   </span>
                 </button>
                 {isRoleSimulationOpen && (
-                  <div id="admin-role-options" className="grid grid-cols-2 gap-1.5 pt-1.5">
+                  <div id="admin-role-options" className="flex gap-1.5 overflow-x-auto pt-1.5">
                     {['Admin', 'Employee', 'Department Head', 'Administrative Officer V', 'Chief of Hospital'].map((r) => (
                       <button
                         key={r}
@@ -2782,7 +2790,7 @@
                           triggerToast(`Simulating Role View: ${r}`);
                           setIsRoleSimulationOpen(false);
                         }}
-                        className={`min-w-0 min-h-10 px-2 py-2 text-[10px] leading-tight font-medium rounded-lg border transition-colors ${r === 'Chief of Hospital' ? 'col-span-2' : ''} ${currentUser.role === r ? 'bg-indigo-600/15 border-indigo-500/40 text-indigo-300' : 'border-transparent text-slate-400 hover:bg-slate-800 hover:text-slate-200'}`}
+                        className={`min-h-8 shrink-0 px-2 text-[9px] leading-tight font-medium whitespace-nowrap rounded-lg border transition-colors ${currentUser.role === r ? 'bg-indigo-600/15 border-indigo-500/40 text-indigo-300' : 'border-transparent text-slate-400 hover:bg-slate-800 hover:text-slate-200'}`}
                       >
                         {r === 'Administrative Officer V' ? 'Admin Officer V' : r}
                       </button>
@@ -3653,6 +3661,14 @@
             {activeTab === 'user-mgmt' && currentUser.role === 'Admin' && (
               <div className="space-y-6">
                 <div className="bg-slate-950 rounded-2xl border border-slate-800 p-4 sm:p-5 space-y-4">
+                  <button
+                    type="button"
+                    onClick={handleLogout}
+                    className="w-full min-h-11 inline-flex items-center justify-center gap-2 px-4 bg-rose-950/60 hover:bg-rose-900/70 border border-rose-800 text-rose-300 text-xs font-bold rounded-xl transition-colors"
+                  >
+                    <Icon name="logout" className="w-4 h-4" />
+                    Log out
+                  </button>
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-800 pb-3">
                     <div>
                       <h3 className="font-bold text-white text-base">Registered System Users Directory</h3>
