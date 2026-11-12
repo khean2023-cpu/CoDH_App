@@ -14,6 +14,7 @@
   <meta name="app-version" content="development">
   <script>
     (() => {
+      document.documentElement.classList.add('app-launching');
       const isInstalledApp =
         window.matchMedia('(display-mode: standalone)').matches ||
         window.matchMedia('(display-mode: fullscreen)').matches ||
@@ -58,7 +59,7 @@
       transition: opacity 360ms ease, visibility 360ms ease;
     }
 
-    .installed-app #app-launch-screen {
+    .app-launching #app-launch-screen {
       display: flex;
     }
 
@@ -5247,7 +5248,7 @@
     root.render(<><App /><InstallPrompt /></>);
 
     const launchScreen = document.getElementById('app-launch-screen');
-    if (launchScreen && document.documentElement.classList.contains('installed-app')) {
+    if (launchScreen) {
       const dismissLaunchScreen = () => {
         window.setTimeout(() => launchScreen.classList.add('is-leaving'), Math.max(0, 1300 - performance.now()));
       };
