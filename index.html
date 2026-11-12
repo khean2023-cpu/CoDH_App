@@ -5250,7 +5250,7 @@
     const launchScreen = document.getElementById('app-launch-screen');
     if (launchScreen) {
       const dismissLaunchScreen = () => {
-        window.setTimeout(() => launchScreen.classList.add('is-leaving'), Math.max(0, 1300 - performance.now()));
+        window.setTimeout(() => launchScreen.classList.add('is-leaving'), Math.max(0, 5000 - performance.now()));
       };
       if (document.readyState === 'complete') dismissLaunchScreen();
       else window.addEventListener('load', dismissLaunchScreen, { once: true });
