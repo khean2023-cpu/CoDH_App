@@ -1242,6 +1242,7 @@
       const [isRoleSimulationOpen, setIsRoleSimulationOpen] = useState(false);
 
       const [activeTab, setActiveTab] = useState(savedSession?.activeTab === 'approvals' ? 'archives' : savedSession?.activeTab || 'dashboard');
+      const [salaryPortalReturnTab, setSalaryPortalReturnTab] = useState('dashboard');
       const [selectedRequestForModal, setSelectedRequestForModal] = useState(null);
       const [editingRequest, setEditingRequest] = useState(null);
       const [printModalRequest, setPrintModalRequest] = useState(null);
@@ -1577,6 +1578,13 @@
       const handleNavigationClick = tab => {
         setActiveTab(currentTab => currentTab === tab && tab !== 'dashboard' ? 'dashboard' : tab);
       };
+
+      const openSalaryPortal = () => {
+        setSalaryPortalReturnTab(activeTab === 'salary-portal' ? 'dashboard' : activeTab);
+        setActiveTab('salary-portal');
+      };
+
+      const closeSalaryPortal = () => setActiveTab(salaryPortalReturnTab);
 
       const loadTetrisLeaderboard = async () => {
         try {
@@ -3062,7 +3070,7 @@
 
               <button
                 type="button"
-                onClick={() => handleNavigationClick('salary-portal')}
+                onClick={openSalaryPortal}
                 aria-current={activeTab === 'salary-portal' ? 'page' : undefined}
                 className={`w-full min-w-0 min-h-11 flex items-center space-x-2 lg:space-x-3 px-3 lg:px-4 py-2 lg:py-3 rounded-xl text-xs font-semibold leading-tight text-left ${activeTab === 'salary-portal' ? 'bg-indigo-600 text-white' : 'text-slate-400 hover:bg-slate-900'}`}
               >
@@ -3231,7 +3239,7 @@
             )}
             <button
               type="button"
-              onClick={() => handleNavigationClick('salary-portal')}
+              onClick={openSalaryPortal}
               aria-label="Salary portal"
               title="Salary portal"
               aria-current={activeTab === 'salary-portal' ? 'page' : undefined}
@@ -3243,20 +3251,6 @@
 
           {/* MAIN CONTENT AREA */}
           <main className="flex-1 min-w-0 w-full max-w-[1600px] mx-auto p-4 sm:p-6 lg:p-8 pb-28 lg:pb-8 space-y-5 sm:space-y-6 overflow-x-hidden lg:overflow-y-auto">
-            {activeTab === 'salary-portal' && (
-              <section className="flex min-h-0 flex-col gap-4">
-                <div>
-                  <h2 className="text-lg font-bold text-white">Salary &amp; Payroll</h2>
-                  <p className="mt-1 text-xs text-slate-400">Check your salary and payroll details on the salary portal.</p>
-                </div>
-                <iframe
-                  title="Salary Portal"
-                  src={salaryPortalUrl}
-                  className="h-[calc(100dvh-12rem)] min-h-[24rem] w-full rounded-2xl border border-slate-800 bg-white"
-                  referrerPolicy="no-referrer"
-                />
-              </section>
-            )}
             {(activeTab === 'profile' || (activeTab === 'mini-games' && currentUser.role === 'Employee')) && (
               <div className="w-full max-w-4xl mx-auto space-y-5 sm:space-y-6">
                 {activeTab === 'profile' && (
@@ -3336,7 +3330,7 @@
                     <p className="text-xs text-slate-400">Check your salary and payroll details on the salary portal.</p>
                     <button
                       type="button"
-                      onClick={() => handleNavigationClick('salary-portal')}
+                      onClick={openSalaryPortal}
                       className="inline-flex min-h-10 items-center rounded-xl bg-emerald-600 px-4 py-2 text-xs font-bold text-white transition-colors hover:bg-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-400"
                     >
                       Open salary portal
@@ -4802,6 +4796,33 @@
               </div>
             )}
           </main>
+
+          {activeTab === 'salary-portal' && (
+            <section
+              className="fixed inset-0 z-[60] flex h-[100dvh] w-screen flex-col overflow-hidden bg-slate-950"
+              role="dialog"
+              aria-modal="true"
+              aria-label="Salary and payroll portal"
+            >
+              <header className="flex h-12 shrink-0 items-center justify-between border-b border-slate-800 bg-slate-950 px-3 sm:px-5">
+                <h2 className="text-sm font-bold text-white">Salary &amp; Payroll</h2>
+                <button
+                  type="button"
+                  onClick={closeSalaryPortal}
+                  className="inline-flex min-h-9 items-center gap-2 rounded-lg border border-slate-700 px-3 text-xs font-semibold text-slate-200 transition-colors hover:bg-slate-800"
+                >
+                  <Icon name="x" className="h-4 w-4" />
+                  <span>Back to app</span>
+                </button>
+              </header>
+              <iframe
+                title="Salary Portal"
+                src={salaryPortalUrl}
+                className="min-h-0 w-full flex-1 border-0 bg-white"
+                referrerPolicy="no-referrer"
+              />
+            </section>
+          )}
 
           {isEditingProfile && (
             <div
