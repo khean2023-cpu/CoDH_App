@@ -1044,15 +1044,22 @@
       );
     }
 
-    function DepartmentPicker({ value, options = HOSPITAL_DEPARTMENTS, onChange, className = '' }) {
+    function DepartmentPicker({
+      value,
+      options = HOSPITAL_DEPARTMENTS,
+      onChange,
+      className = '',
+      title = 'Select Department / Section',
+      description = 'Choose the department to assign.'
+    }) {
       return (
         <SelectionPicker
           value={value}
           options={options}
           onChange={onChange}
           className={className}
-          title="Select Department / Section"
-          description="Choose the department to assign."
+          title={title}
+          description={description}
           placeholder="Select a department"
         />
       );
@@ -1835,10 +1842,14 @@
         const email = String(formValues.get('email') ?? regForm.email).trim();
         const employmentType = String(formValues.get('employmentType') ?? regForm.employmentType);
         const role = String(formValues.get('role') ?? regForm.role);
+        const requestedDept = String(regForm.dept || '').trim();
         const password = String(formValues.get('password') ?? regForm.password);
         const confirmPassword = String(formValues.get('confirmPassword') ?? regForm.confirmPassword);
         if (!lastName || !firstName || !position || !email || !password || !employmentType) {
           return triggerToast('Please fill in required fields.', 'error');
+        }
+        if (!IS_LOCAL_DEMO && (!role || !requestedDept)) {
+          return triggerToast('Please select a requested role and department.', 'error');
         }
         if (password.length !== 6) {
           return triggerToast('Password must be exactly 6 characters.', 'error');
@@ -1848,9 +1859,11 @@
         }
 
         let assignedDept = regForm.dept;
-        if (role === 'Chief of Hospital') assignedDept = 'Executive Office';
-        if (role === 'Administrative Officer V') assignedDept = 'Administrative Section';
-        if (role === 'Department Head') assignedDept = 'Pending Assignment';
+        if (IS_LOCAL_DEMO) {
+          if (role === 'Chief of Hospital') assignedDept = 'Executive Office';
+          if (role === 'Administrative Officer V') assignedDept = 'Administrative Section';
+          if (role === 'Department Head') assignedDept = 'Pending Assignment';
+        }
 
         const newEmp = {
           firstName,
@@ -1860,12 +1873,18 @@
           title: position,
           password,
           status: 'Pending',
-          ...(IS_LOCAL_DEMO ? {
-            employmentType,
-            role,
-            dept: assignedDept,
-            headOfDept: role === 'Department Head' ? assignedDept : null
-          } : {})
+          ...(IS_LOCAL_DEMO
+            ? {
+                employmentType,
+                role,
+                dept: assignedDept,
+                headOfDept: role === 'Department Head' ? assignedDept : null
+              }
+            : {
+                requestedRole: role,
+                requestedDept,
+                requestedEmploymentType: employmentType
+              })
         };
 
         let created;
@@ -2732,8 +2751,10 @@
                     />
                   </div>
 
-                  {IS_LOCAL_DEMO && <div>
-                    <label htmlFor="register-employment-type" className="text-xs text-slate-300 block mb-1">Employment Type</label>
+                  <div>
+                    <label htmlFor="register-employment-type" className="text-xs text-slate-300 block mb-1">
+                      {IS_LOCAL_DEMO ? 'Employment Type' : 'Requested Employment Type'}
+                    </label>
                     <SelectionPicker
                       id="register-employment-type"
                       name="employmentType"
@@ -2741,33 +2762,45 @@
                       onChange={employmentType => setRegForm(prev => ({ ...prev, employmentType }))}
                       options={['Contract of Service', 'Permanent']}
                       title="Select Employment Type"
-                      description="Choose the employment type for this account."
+                      description={IS_LOCAL_DEMO
+                        ? 'Choose the employment type for this account.'
+                        : 'This is a request only; an administrator makes the final assignment.'}
                       placeholder="Select employment type"
                       className="bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white"
                     />
-                  </div>}
+                  </div>
 
                   {/* SPECIFIC ROLE SELECTION */}
-                  {IS_LOCAL_DEMO && <div>
-                    <label className="text-xs text-slate-300 block mb-1">Select Assigned Role</label>
+                  <div>
+                    <label className="text-xs text-slate-300 block mb-1">
+                      {IS_LOCAL_DEMO ? 'Select Assigned Role' : 'Requested Role'}
+                    </label>
                     <SelectionPicker
                       name="role"
                       value={regForm.role}
                       onChange={role => setRegForm(prev => ({ ...prev, role }))}
                       options={['Employee', 'Department Head', 'Human Resource', 'Administrative Officer V', 'Chief of Hospital']}
-                      title="Select Assigned Role"
-                      description="Choose the role for this account."
+                      title={IS_LOCAL_DEMO ? 'Select Assigned Role' : 'Request a Role'}
+                      description={IS_LOCAL_DEMO
+                        ? 'Choose the role for this account.'
+                        : 'This is a request only; an administrator makes the final assignment.'}
                       className="bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white"
                     />
-                  </div>}
+                  </div>
 
                   {/* DEPARTMENT TAGGING ONLY FOR NON-DEPT HEAD / SPECIAL ROLES */}
-                  {IS_LOCAL_DEMO && ['Employee'].includes(regForm.role) && (
+                  {(!IS_LOCAL_DEMO || regForm.role === 'Employee') && (
                     <div>
-                      <label className="text-xs text-slate-300 block mb-1">Hospital Department / Section</label>
+                      <label className="text-xs text-slate-300 block mb-1">
+                        {IS_LOCAL_DEMO ? 'Hospital Department / Section' : 'Requested Department / Section'}
+                      </label>
                       <DepartmentPicker
                         value={regForm.dept}
                         onChange={dept => setRegForm(prev => ({ ...prev, dept }))}
+                        title={IS_LOCAL_DEMO ? 'Select Department / Section' : 'Request Department / Section'}
+                        description={IS_LOCAL_DEMO
+                          ? 'Choose the department to assign.'
+                          : 'This is a request only; an administrator makes the final assignment.'}
                         className="bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-xs text-white"
                       />
                     </div>
@@ -2781,7 +2814,7 @@
                   )}
                   {!IS_LOCAL_DEMO && (
                     <p className="text-[11px] text-slate-400">
-                      An administrator assigns your department, role, and employment type after reviewing your registration.
+                      Your role, department, and employment type selections are requests only. An administrator reviews them and assigns your final details.
                     </p>
                   )}
 
@@ -4548,7 +4581,15 @@
                               <div className="space-y-1">
                                 <div className="font-semibold text-xs text-white break-words">{pendingEmp.name} ({pendingEmp.email})</div>
                                 <div className="text-[11px] text-slate-400">
-                                  Role: <span className="text-indigo-400 font-semibold">{pendingEmp.role}</span>
+                                  Position: <span className="text-indigo-400 font-semibold">{pendingEmp.title || 'Not provided'}</span>
+                                </div>
+                                <div className="text-[11px] text-slate-400">
+                                  Current role: <span className="text-indigo-400 font-semibold">{pendingEmp.role}</span>
+                                </div>
+                                <div className="text-[11px] text-slate-400">
+                                  Requested role: <span className="text-indigo-400 font-semibold">{pendingEmp.requestedRole || 'No preference'}</span>
+                                  {' · '}Department: <span className="text-indigo-400 font-semibold">{pendingEmp.requestedDept || 'No preference'}</span>
+                                  {' · '}Employment: <span className="text-indigo-400 font-semibold">{pendingEmp.requestedEmploymentType || 'No preference'}</span>
                                 </div>
 
                                 {pendingEmp.role === 'Department Head' && (
@@ -4574,6 +4615,14 @@
                               </div>
 
                               <div className="flex flex-wrap items-center gap-2">
+                                <button
+                                  type="button"
+                                  onClick={() => openProfileEditor(pendingEmp)}
+                                  className="px-3 py-1.5 rounded-lg bg-indigo-600/20 hover:bg-indigo-600/50 text-indigo-300 hover:text-white text-xs font-semibold border border-indigo-500/40 transition-all flex items-center space-x-1"
+                                >
+                                  <Icon name="edit" className="w-3.5 h-3.5" />
+                                  <span>Review / Assign</span>
+                                </button>
                                 <button
                                   type="button"
                                   onClick={async () => {
