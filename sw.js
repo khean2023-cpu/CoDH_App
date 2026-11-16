@@ -1,6 +1,6 @@
 // CoDH App service worker: makes the app installable and keeps the app shell
 // available when the network is flaky. API calls are never cached.
-const CACHE = 'codh-shell-v2';
+const CACHE = 'codh-shell-v3';
 const SHELL = [
   '/',
   '/manifest.webmanifest',
@@ -27,7 +27,7 @@ self.addEventListener('fetch', (event) => {
   const url = new URL(req.url);
 
   // Never intercept live data or uploaded files.
-  if (url.origin === self.location.origin && url.pathname.startsWith('/api/')) return;
+  if (url.pathname.startsWith('/api/')) return;
 
   // Pages: network first so users always get the latest version, cache as fallback.
   if (req.mode === 'navigate') {

@@ -1,0 +1,9 @@
+{
+  "appId": "org.codh.app",
+  "appName": "CoDH App",
+  "webDir": "dist",
+  "server": {
+    "url": "https://khean2023-git-main-co-dh.vercel.app/?codh-native=1",
+    "cleartext": false
+  }
+}
