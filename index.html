@@ -3074,7 +3074,7 @@
                 aria-current={activeTab === 'salary-portal' ? 'page' : undefined}
                 className={`w-full min-w-0 min-h-11 flex items-center space-x-2 lg:space-x-3 px-3 lg:px-4 py-2 lg:py-3 rounded-xl text-xs font-semibold leading-tight text-left ${activeTab === 'salary-portal' ? 'bg-indigo-600 text-white' : 'text-slate-400 hover:bg-slate-900'}`}
               >
-                <Icon name="file-text" className="w-4 h-4 shrink-0" />
+                {currentUser.role !== 'Employee' && <Icon name="file-text" className="w-4 h-4 shrink-0" />}
                 <span>Salary Portal</span>
               </button>
 
@@ -3135,7 +3135,7 @@
 
           <nav
             aria-label="Mobile navigation"
-            className={`fixed inset-x-4 z-40 mx-auto grid max-w-sm ${isApprover ? 'grid-cols-5' : 'grid-cols-6'} items-center rounded-full border border-slate-700/70 bg-slate-950/90 px-2 py-2 shadow-2xl shadow-black/40 backdrop-blur-xl lg:hidden`}
+            className={`fixed inset-x-4 z-40 mx-auto grid max-w-sm ${isApprover || currentUser.role === 'Employee' ? 'grid-cols-5' : 'grid-cols-6'} items-center rounded-full border border-slate-700/70 bg-slate-950/90 px-2 py-2 shadow-2xl shadow-black/40 backdrop-blur-xl lg:hidden`}
             style={{ bottom: 'calc(env(safe-area-inset-bottom) + 0.75rem)' }}
           >
             <button
@@ -3237,16 +3237,18 @@
                 <Icon name="user" className="h-5 w-5" />
               </button>
             )}
-            <button
-              type="button"
-              onClick={openSalaryPortal}
-              aria-label="Salary portal"
-              title="Salary portal"
-              aria-current={activeTab === 'salary-portal' ? 'page' : undefined}
-              className={`mx-auto flex h-11 w-11 items-center justify-center rounded-full transition-colors ${activeTab === 'salary-portal' ? 'bg-amber-400/10 text-amber-400' : 'text-slate-400 hover:bg-slate-800 hover:text-white'}`}
-            >
-              <Icon name="file-text" className="h-5 w-5" />
-            </button>
+            {currentUser.role !== 'Employee' && (
+              <button
+                type="button"
+                onClick={openSalaryPortal}
+                aria-label="Salary portal"
+                title="Salary portal"
+                aria-current={activeTab === 'salary-portal' ? 'page' : undefined}
+                className={`mx-auto flex h-11 w-11 items-center justify-center rounded-full transition-colors ${activeTab === 'salary-portal' ? 'bg-amber-400/10 text-amber-400' : 'text-slate-400 hover:bg-slate-800 hover:text-white'}`}
+              >
+                <Icon name="file-text" className="h-5 w-5" />
+              </button>
+            )}
           </nav>
 
           {/* MAIN CONTENT AREA */}
