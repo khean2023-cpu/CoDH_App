@@ -1325,6 +1325,7 @@
       };
       const [formData, setFormData] = useState(() => createEmptyForm(currentUser));
       const profileAccount = profileEditTarget || currentUser;
+      const canEditRole = currentUser?.role === 'Admin' && Boolean(profileEditTarget);
       const leaveFormVariant = currentUser?.employmentType === 'Permanent' ? 'CSC' : 'COS';
       const welcomeTimeParts = new Intl.DateTimeFormat('en-PH', {
         timeZone: 'Asia/Manila',
@@ -1958,7 +1959,6 @@
         e.preventDefault();
         if (!profileAccount) return;
         const isEditingAnotherUser = profileAccount.id !== currentUser.id;
-        const canEditRole = currentUser.role === 'Admin' && Boolean(profileEditTarget);
         const firstName = profileForm.firstName.trim();
         const middleName = profileForm.middleName.trim();
         const lastName = profileForm.lastName.trim();
