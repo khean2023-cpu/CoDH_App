@@ -30,9 +30,20 @@ const verifyPassword = (password: string, stored: string) => {
 };
 
 const publicUser = (user: UserDocument, viewer?: UserDocument) => {
-  const { passwordHash, emailNormalized, createdAt, salary, salaryHistory, signature, ...rest } = user;
+  const {
+    passwordHash,
+    emailNormalized,
+    createdAt,
+    salary,
+    salaryHistory,
+    signature,
+    requestedRole,
+    requestedDept,
+    requestedEmploymentType,
+    ...rest
+  } = user;
   if (viewer && (viewer.role === "Admin" || viewer.id === user.id)) {
-    return { ...rest, salary, salaryHistory, signature };
+    return { ...rest, salary, salaryHistory, signature, requestedRole, requestedDept, requestedEmploymentType };
   }
   return rest;
 };
@@ -56,6 +67,8 @@ const VALID_USER_ROLES = new Set<string>([
   "Administrative Officer V",
   "Chief of Hospital",
 ]);
+const VALID_REGISTRATION_ROLES = new Set([...VALID_USER_ROLES].filter(role => role !== "Admin"));
+const VALID_EMPLOYMENT_TYPES = new Set(["Contract of Service", "Permanent"]);
 const VALID_USER_STATUSES = new Set<string>(["Pending", "Approved", "Deactivated"]);
 const sessionHash = (token: string) => createHash("sha256").update(token).digest("hex");
 
@@ -326,10 +339,20 @@ export const handleApi = async (req: Request, apiPath?: string) => {
       const body = await req.json().catch(() => ({}));
       const { firstName, middleName, lastName, email, password } = body;
       const title = String(body.title || "").trim();
+      const requestedRole = String(body.requestedRole || "").trim();
+      const requestedDept = String(body.requestedDept || "").trim();
+      const requestedEmploymentType = String(body.requestedEmploymentType || "").trim();
       if (!String(firstName || "").trim() || !String(lastName || "").trim() || !title || !email) {
         return error("Please provide your first name, last name, position, and email.");
       }
       if (String(password || "").length !== 6) return error("Password must be exactly 6 characters.");
+      if (requestedRole && !VALID_REGISTRATION_ROLES.has(requestedRole)) {
+        return error("Select a valid requested role.");
+      }
+      if (requestedDept.length > 120) return error("Requested department must be 120 characters or fewer.");
+      if (requestedEmploymentType && !VALID_EMPLOYMENT_TYPES.has(requestedEmploymentType)) {
+        return error("Select a valid requested employment type.");
+      }
       const existing = await users.findOne(
         { emailNormalized: String(email).toLowerCase().trim() },
         { projection: { _id: 1 } },
@@ -349,6 +372,9 @@ export const handleApi = async (req: Request, apiPath?: string) => {
         headOfDept: null,
         title,
         employmentType: "Contract of Service",
+        requestedRole: requestedRole || null,
+        requestedDept: requestedDept || null,
+        requestedEmploymentType: requestedEmploymentType || null,
         salary: null,
         salaryHistory: [],
         avatar: null,
@@ -666,7 +692,7 @@ export const handleApi = async (req: Request, apiPath?: string) => {
         const employmentType = "employmentType" in body
           ? String(body.employmentType || "")
           : user.employmentType || "Contract of Service";
-        if (!["Contract of Service", "Permanent"].includes(employmentType)) {
+        if (!VALID_EMPLOYMENT_TYPES.has(employmentType)) {
           return error("Select a valid employment type.");
         }
 

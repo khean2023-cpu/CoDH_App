@@ -30,6 +30,9 @@ export interface UserDocument {
   headOfDept?: string | null;
   title?: string | null;
   employmentType: string;
+  requestedRole?: string | null;
+  requestedDept?: string | null;
+  requestedEmploymentType?: string | null;
   salary?: string | null;
   salaryHistory: {
     id: string;

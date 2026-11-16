@@ -67,7 +67,8 @@ const definitions: Record<CollectionName, CollectionDefinition> = {
     table: "users",
     columns: [
       "id", "name", "firstName", "middleName", "lastName", "email", "emailNormalized", "role",
-      "dept", "headOfDept", "title", "employmentType", "salary", "salaryHistory", "avatar",
+      "dept", "headOfDept", "title", "employmentType", "requestedRole", "requestedDept",
+      "requestedEmploymentType", "salary", "salaryHistory", "avatar",
       "signature", "passwordHash", "status", "createdAt",
     ],
     jsonColumns: ["salaryHistory"],
@@ -141,6 +142,9 @@ const schemaStatements = [
     head_of_dept TEXT,
     title TEXT,
     employment_type TEXT NOT NULL DEFAULT 'Contract of Service',
+    requested_role TEXT,
+    requested_dept TEXT,
+    requested_employment_type TEXT,
     salary TEXT,
     salary_history JSONB NOT NULL DEFAULT '[]'::jsonb,
     avatar TEXT,
@@ -149,6 +153,9 @@ const schemaStatements = [
     status TEXT NOT NULL DEFAULT 'Pending',
     created_at TIMESTAMPTZ NOT NULL DEFAULT now()
   )`,
+  "ALTER TABLE users ADD COLUMN IF NOT EXISTS requested_role TEXT",
+  "ALTER TABLE users ADD COLUMN IF NOT EXISTS requested_dept TEXT",
+  "ALTER TABLE users ADD COLUMN IF NOT EXISTS requested_employment_type TEXT",
   `CREATE TABLE IF NOT EXISTS requests (
     id TEXT PRIMARY KEY,
     type TEXT NOT NULL,

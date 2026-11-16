@@ -27,8 +27,9 @@ changes. Their file metadata is stored in the `profile_media` database table,
 and their image data is stored in private Vercel Blob storage.
 
 Registration records a user's last, first, and optional middle name and position.
-Deployed registrations start as pending Contract of Service Employees without a
-department; an administrator assigns the role, department, and employment type.
+Deployed registration also collects requested role, department, and employment
+type. These are requests only: new accounts remain pending Contract of Service
+Employees without a department until an administrator reviews and assigns them.
 Permanent accounts can update their position and salary from My Profile; salary
 changes are recorded in the profile's salary adjustment history.
 All accounts can open the salary portal inside the app from the navigation or
@@ -91,9 +92,10 @@ and profile media.
 
 The deployed API uses expiring, HttpOnly sessions. New registrations are
 Employees with no department assignment until an administrator reviews the
-account, assigns its department and role, and approves it. Administrators manage
-all accounts and records; other roles are limited to their own data and the
-requests assigned to their approval workflow.
+requested role, department, and employment type, assigns the final values, and
+approves the account. Administrators manage all accounts and records; other
+roles are limited to their own data and the requests assigned to their approval
+workflow.
 
 Each build embeds its UTC build timestamp as the app version, displayed below
 the app name, so the version updates automatically on every Vercel deploy.
