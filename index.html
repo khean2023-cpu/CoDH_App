@@ -761,8 +761,67 @@
     const apiAssetUrl = (url) => typeof url === 'string' && url.startsWith('/api/')
       ? `${API_ORIGIN}${url}`
       : url;
+    const OFFLINE_DB_NAME = 'codh-offline-cache';
+    const OFFLINE_STORE_NAME = 'snapshots';
+    let apiUnavailable = !navigator.onLine;
+    const setApiAvailability = available => {
+      apiUnavailable = !available;
+      window.dispatchEvent(new CustomEvent('codh-api-availability', { detail: available }));
+    };
+
+    const openOfflineDatabase = () => new Promise((resolve, reject) => {
+      if (!window.indexedDB) {
+        reject(new Error('This browser does not support offline storage.'));
+        return;
+      }
+      const request = indexedDB.open(OFFLINE_DB_NAME, 1);
+      request.onupgradeneeded = () => {
+        request.result.createObjectStore(OFFLINE_STORE_NAME, { keyPath: 'userId' });
+      };
+      request.onsuccess = () => resolve(request.result);
+      request.onerror = () => reject(request.error || new Error('Could not open offline storage.'));
+    });
+
+    const saveOfflineSnapshot = async (userId, data) => {
+      const db = await openOfflineDatabase();
+      return new Promise((resolve, reject) => {
+        const transaction = db.transaction(OFFLINE_STORE_NAME, 'readwrite');
+        transaction.objectStore(OFFLINE_STORE_NAME).put({ userId, data, savedAt: Date.now() });
+        transaction.oncomplete = () => { db.close(); resolve(); };
+        transaction.onerror = () => { db.close(); reject(transaction.error || new Error('Could not save offline data.')); };
+        transaction.onabort = () => { db.close(); reject(transaction.error || new Error('Offline data save was cancelled.')); };
+      });
+    };
+
+    const readOfflineSnapshot = async userId => {
+      const db = await openOfflineDatabase();
+      return new Promise((resolve, reject) => {
+        const transaction = db.transaction(OFFLINE_STORE_NAME, 'readonly');
+        const request = transaction.objectStore(OFFLINE_STORE_NAME).get(userId);
+        request.onsuccess = () => { db.close(); resolve(request.result || null); };
+        request.onerror = () => { db.close(); reject(request.error || new Error('Could not read offline data.')); };
+      });
+    };
+
+    const deleteOfflineSnapshot = async userId => {
+      const db = await openOfflineDatabase();
+      return new Promise((resolve, reject) => {
+        const transaction = db.transaction(OFFLINE_STORE_NAME, 'readwrite');
+        transaction.objectStore(OFFLINE_STORE_NAME).delete(userId);
+        transaction.oncomplete = () => { db.close(); resolve(); };
+        transaction.onerror = () => { db.close(); reject(transaction.error || new Error('Could not clear offline data.')); };
+        transaction.onabort = () => { db.close(); reject(transaction.error || new Error('Offline data removal was cancelled.')); };
+      });
+    };
+
+    const ensureApiWritable = () => {
+      if (apiUnavailable || !navigator.onLine) {
+        throw new Error('The app is offline and showing saved data in read-only mode. Connect to the internet to make changes.');
+      }
+    };
 
     const api = async (path, options = {}) => {
+      if (String(options.method || 'GET').toUpperCase() !== 'GET') ensureApiWritable();
       let res;
       try {
         res = await fetch(apiUrl(path), {
@@ -772,8 +831,12 @@
         });
       } catch (err) {
         if (!(err instanceof TypeError)) throw err;
-        throw new Error(`Could not connect to the app API at ${API_ORIGIN || window.location.origin}. For local use, run "npm run dev" and open http://127.0.0.1:4173. For production, configure the database and file storage for your deployment.`);
+        setApiAvailability(false);
+        const error = new Error(`Could not connect to the app API at ${API_ORIGIN || window.location.origin}. For local use, run "npm run dev" and open http://127.0.0.1:4173. For production, configure the database and file storage for your deployment.`);
+        error.code = 'NETWORK_ERROR';
+        throw error;
       }
+      setApiAvailability(true);
       if (!res.headers.get('content-type')?.includes('application/json')) {
         throw new Error(`The app API at ${apiUrl(path)} returned HTTP ${res.status} instead of JSON. For local use, run "npm run dev" and open http://127.0.0.1:4173. For production, configure the database and file storage for your deployment.`);
       }
@@ -790,6 +853,7 @@
     const isSupportedImage = file => /\.(png|jpe?g)$/i.test(file.name);
 
     const uploadAttachment = async (file, userId) => {
+      ensureApiWritable();
       const res = await fetch(apiUrl('attachments'), {
         method: 'POST',
         headers: {
@@ -805,6 +869,7 @@
     };
 
     const uploadProfileMedia = async (file, userId, mediaType) => {
+      ensureApiWritable();
       const res = await fetch(apiUrl(`profile-media/${encodeURIComponent(userId)}/${mediaType}`), {
         method: 'POST',
         headers: {
@@ -1218,6 +1283,10 @@
       const [isAuthenticated, setIsAuthenticated] = useState(false);
       const [isLocalDemo, setIsLocalDemo] = useState(false);
       const [authChecking, setAuthChecking] = useState(true);
+      const [isOnline, setIsOnline] = useState(() => navigator.onLine);
+      const [isApiUnavailable, setIsApiUnavailable] = useState(false);
+      const [isUsingOfflineCache, setIsUsingOfflineCache] = useState(false);
+      const offlineCacheGeneration = useRef(0);
       const [currentUser, setCurrentUser] = useState(null);
       const [authMode, setAuthMode] = useState('signin');
       
@@ -1354,6 +1423,7 @@
         day: 'numeric',
         year: 'numeric'
       }).format(welcomeClock);
+      const hasLiveConnection = isOnline && !isApiUnavailable && !isUsingOfflineCache;
 
       useEffect(() => {
         const timer = setInterval(() => setWelcomeClock(new Date()), 1000);
@@ -1386,28 +1456,94 @@
         return () => URL.revokeObjectURL(previewUrl);
       }, [profileSignature, profileSignatureCleared, profileAccount?.signature]);
 
-      // --- NETLIFY DATABASE SYNC (initial load + periodic refresh) ---
+      const applyData = data => {
+        setEmployees(data.users);
+        setCurrentUser(current => {
+          const latestUser = data.users.find(user => user.id === current?.id);
+          return current && latestUser ? { ...current, ...latestUser } : current;
+        });
+        setRequests(data.requests);
+        setNotifications(data.notifications);
+        setUserArchiveCopies(data.archives);
+        setDataLoaded(true);
+      };
+
+      const loadOfflineData = async userId => {
+        const snapshot = await readOfflineSnapshot(userId);
+        if (!snapshot) return false;
+        applyData(snapshot.data);
+        setIsUsingOfflineCache(true);
+        return true;
+      };
+
+      // --- DATABASE SYNC (initial load + periodic refresh) ---
       const loadData = async () => {
+        const generation = offlineCacheGeneration.current;
+        const userId = currentUser?.id;
         try {
           const data = await api('data');
-          setEmployees(data.users);
-          setCurrentUser(current => {
-            const latestUser = data.users.find(user => user.id === current?.id);
-            return current && latestUser ? { ...current, ...latestUser } : current;
-          });
-          setRequests(data.requests);
-          setNotifications(data.notifications);
-          setUserArchiveCopies(data.archives);
-          setDataLoaded(true);
+          if (generation !== offlineCacheGeneration.current) return;
+          applyData(data);
+          setIsApiUnavailable(false);
+          setIsUsingOfflineCache(false);
+          if (userId) {
+            try {
+              await saveOfflineSnapshot(userId, data);
+              if (generation !== offlineCacheGeneration.current) await deleteOfflineSnapshot(userId);
+            } catch (err) {
+              console.error('Failed to save offline data:', err);
+            }
+          }
         } catch (err) {
           console.error('Failed to load data:', err);
+          if (generation !== offlineCacheGeneration.current) return;
+          if (err.code === 'NETWORK_ERROR' || !navigator.onLine) {
+            setIsApiUnavailable(true);
+            if (userId) {
+              try {
+                const restored = await loadOfflineData(userId);
+                if (!restored) setIsUsingOfflineCache(false);
+              } catch (cacheError) {
+                console.error('Failed to restore offline data:', cacheError);
+                setIsUsingOfflineCache(false);
+              }
+            } else {
+              setIsUsingOfflineCache(false);
+            }
+          }
           if (err.status === 401) {
+            offlineCacheGeneration.current += 1;
+            if (userId) {
+              deleteOfflineSnapshot(userId).catch(cacheError => {
+                console.error('Failed to clear expired offline data:', cacheError);
+              });
+            }
             setIsAuthenticated(false);
             setCurrentUser(null);
             localStorage.removeItem(SESSION_KEY);
           }
         }
       };
+
+      useEffect(() => {
+        const handleOnline = () => {
+          setApiAvailability(true);
+          setIsOnline(true);
+        };
+        const handleOffline = () => {
+          setApiAvailability(false);
+          setIsOnline(false);
+        };
+        const handleApiAvailability = event => setIsApiUnavailable(!event.detail);
+        window.addEventListener('online', handleOnline);
+        window.addEventListener('offline', handleOffline);
+        window.addEventListener('codh-api-availability', handleApiAvailability);
+        return () => {
+          window.removeEventListener('online', handleOnline);
+          window.removeEventListener('offline', handleOffline);
+          window.removeEventListener('codh-api-availability', handleApiAvailability);
+        };
+      }, []);
 
       useEffect(() => {
         let cancelled = false;
@@ -1429,7 +1565,29 @@
             }
           } catch (err) {
             console.error('Failed to restore session:', err);
-            localStorage.removeItem(SESSION_KEY);
+            if (err.code === 'NETWORK_ERROR' || !navigator.onLine) setIsApiUnavailable(true);
+            if ((err.code === 'NETWORK_ERROR' || !navigator.onLine) && savedSession?.user?.id) {
+              try {
+                const restored = await loadOfflineData(savedSession.user.id);
+                if (!cancelled && restored) {
+                  setIsLocalDemo(Boolean(savedSession.localDemo));
+                  setCurrentUser(savedSession.user);
+                  setIsAuthenticated(true);
+                } else if (!cancelled) {
+                  localStorage.removeItem(SESSION_KEY);
+                }
+              } catch (cacheError) {
+                console.error('Failed to restore offline session data:', cacheError);
+                if (!cancelled) localStorage.removeItem(SESSION_KEY);
+              }
+            } else {
+              localStorage.removeItem(SESSION_KEY);
+              if (err.status === 401 && savedSession?.user?.id) {
+                deleteOfflineSnapshot(savedSession.user.id).catch(cacheError => {
+                  console.error('Failed to clear expired offline data:', cacheError);
+                });
+              }
+            }
           } finally {
             if (!cancelled) setAuthChecking(false);
           }
@@ -1439,16 +1597,16 @@
       }, []);
 
       useEffect(() => {
-        if (!isAuthenticated) return;
+        if (!isAuthenticated || !isOnline) return;
         loadData();
         const timer = setInterval(loadData, 15000);
         return () => clearInterval(timer);
-      }, [isAuthenticated]);
+      }, [isAuthenticated, isOnline]);
 
-      // Keep the saved session in sync with the signed-in user and current tab
+      // Keep the saved session available for offline access on this device.
       useEffect(() => {
-        if (isLocalDemo && isAuthenticated && currentUser) {
-          localStorage.setItem(SESSION_KEY, JSON.stringify({ user: currentUser, activeTab }));
+        if (isAuthenticated && currentUser) {
+          localStorage.setItem(SESSION_KEY, JSON.stringify({ user: currentUser, activeTab, localDemo: isLocalDemo }));
         } else {
           localStorage.removeItem(SESSION_KEY);
         }
@@ -1459,6 +1617,10 @@
         if (!dataLoaded || !isAuthenticated || !currentUser) return;
         const record = employees.find(e => e.id === currentUser.id);
         if (!record || record.status === 'Pending' || record.status === 'Deactivated') {
+          offlineCacheGeneration.current += 1;
+          deleteOfflineSnapshot(currentUser.id).catch(err => {
+            console.error('Failed to clear inactive account offline data:', err);
+          });
           setIsAuthenticated(false);
           setCurrentUser(null);
         }
@@ -1466,13 +1628,24 @@
 
       const handleLogout = async () => {
         let logoutError = null;
+        const userId = currentUser?.id;
+        offlineCacheGeneration.current += 1;
         try {
           await api('logout', { method: 'POST' });
         } catch (err) {
           logoutError = err;
         }
+        if (userId) {
+          try {
+            await deleteOfflineSnapshot(userId);
+          } catch (err) {
+            console.error('Failed to clear offline data on logout:', err);
+            logoutError ||= err;
+          }
+        }
         setIsAuthenticated(false);
         setCurrentUser(null);
+        setIsUsingOfflineCache(false);
         setShowNotifPanel(false);
         setActiveTab('dashboard');
         localStorage.removeItem(SESSION_KEY);
@@ -2645,6 +2818,11 @@
                 <h1 className="text-2xl font-black text-white">CoDH App</h1>
                 <p className="text-xs text-slate-400">Version {appVersion}</p>
                 <p className="text-xs text-slate-400">Faster requests, transparent approvals, better hospital management.</p>
+                {(!isOnline || isApiUnavailable) && (
+                  <p role="status" className="rounded-xl border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs text-amber-200">
+                    You need an internet connection to sign in. Previously saved data is available only for an account already signed in on this device.
+                  </p>
+                )}
               </div>
 
               <div className="grid grid-cols-2 p-1 bg-slate-950 rounded-2xl border border-slate-800">
@@ -3253,6 +3431,13 @@
 
           {/* MAIN CONTENT AREA */}
           <main className="flex-1 min-w-0 w-full max-w-[1600px] mx-auto p-4 sm:p-6 lg:p-8 pb-28 lg:pb-8 space-y-5 sm:space-y-6 overflow-x-hidden lg:overflow-y-auto">
+            {(!isOnline || isApiUnavailable || isUsingOfflineCache) && (
+              <div role="status" className="rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-xs text-amber-200">
+                  {isUsingOfflineCache
+                    ? 'Offline mode — showing saved data from this device. Changes are disabled until the app reconnects.'
+                    : 'Connection unavailable — no saved data is available on this device. Connect to the internet to continue.'}
+              </div>
+            )}
             {(activeTab === 'profile' || (activeTab === 'mini-games' && currentUser.role === 'Employee')) && (
               <div className="w-full max-w-4xl mx-auto space-y-5 sm:space-y-6">
                 {activeTab === 'profile' && (
@@ -3651,7 +3836,10 @@
                             </div>
                           )}
                         </div>
-                        <span className="absolute -bottom-1 -right-1 h-3.5 w-3.5 rounded-full border-2 border-slate-950 bg-emerald-400" aria-label="Online" />
+                        <span
+                          className={`absolute -bottom-1 -right-1 h-3.5 w-3.5 rounded-full border-2 border-slate-950 ${hasLiveConnection ? 'bg-emerald-400' : 'bg-amber-400'}`}
+                          aria-label={hasLiveConnection ? 'Online' : 'Offline'}
+                        />
                       </div>
                       <div className="min-w-0">
                         <h3 className="break-words text-base font-extrabold tracking-tight text-slate-100 sm:text-lg">
@@ -3663,8 +3851,8 @@
                             {currentUser.role}
                           </span>
                           <span className="inline-flex items-center gap-1.5 text-slate-400">
-                            <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
-                            System Online
+                            <span className={`h-1.5 w-1.5 rounded-full ${hasLiveConnection ? 'bg-emerald-400' : 'bg-amber-400'}`} />
+                            {hasLiveConnection ? 'System Online' : 'Offline mode'}
                           </span>
                           {currentUser.dept && <span className="text-slate-500">• {currentUser.dept}</span>}
                         </div>
