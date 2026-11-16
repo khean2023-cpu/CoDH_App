@@ -24,13 +24,13 @@ must approve a Human Resource account before requests can be routed to it.
 Supporting documents, profile photos, and e-signatures accept PNG and JPEG files
 (up to 4 MB). Profile photos and e-signatures are uploaded when you save profile
 changes. Their file metadata is stored in the `profile_media` database table,
-and their image data is stored in Netlify Blobs.
+and their image data is stored in private Vercel Blob storage.
 
-Registration records a user's last, first, and optional middle name, position,
-and tags the account as Contract of Service or Permanent. Only administrators
-can change a user's employment type. Permanent accounts can update their position
-and salary from My Profile; salary changes are recorded in the profile's salary
-adjustment history.
+Registration records a user's last, first, and optional middle name and position.
+Deployed registrations start as pending Contract of Service Employees without a
+department; an administrator assigns the role, department, and employment type.
+Permanent accounts can update their position and salary from My Profile; salary
+changes are recorded in the profile's salary adjustment history.
 All accounts can open the salary portal inside the app from the navigation or
 My Profile to check their salary and payroll details.
 
@@ -62,70 +62,58 @@ sheet) with borderless request details and evenly aligned approval and
 signature sections. PDF output is constrained to one page.
 
 The local demo API runs only on this computer and saves its data in
-`local-demo-data.json`. It does not connect to the Netlify database. The file is
+`local-demo-data.json`; uploads are stored in `local-demo-blobs/`. Both paths are
 ignored by Git.
 
-## Deploy from GitHub to Netlify
+## Deploy from GitHub to Vercel
 
-Netlify's Git integration keeps the deployed app up to date with the selected
-GitHub branch. After linking the repository, each push to the production
-branch triggers a build and deploy; pull requests can also get deploy previews.
-This syncs the app's source code, not local demo data or uploaded files. A
-drag-and-drop static deploy does not publish the API function, so the app will
-not be able to sign in or save data.
+The Vercel configuration builds the static app into `dist/` and routes `/api/*`
+to a Vercel Function. The API uses PostgreSQL provisioned through a Vercel
+Marketplace integration and private Vercel Blob storage for uploaded documents
+and profile media.
 
-1. Push this project to a GitHub repository. In Netlify, choose **Add new
-   project** → **Import an existing project** → **GitHub**, authorize Netlify
-   to access the account/repository, and select the repository and production
-   branch. Keep the build settings from `netlify.toml`: Node.js 22,
-   `npm run build`, publish directory `dist`, and functions directory
-   `netlify/functions`.
-2. Create an Atlas database user with access to the application database, and
-   configure Atlas Network Access to allow the Netlify Functions' outbound
-   connections. In the Netlify site's **Environment variables** settings, add
-   `MONGODB_URI` as a secret containing the Atlas connection string and set
-   `MONGODB_DATABASE` to `codh_app`. Never put the URI in GitHub or in this
-   repository. The API creates the database and collections on its first
-   request after connecting.
-3. Add `SYSTEM_ADMIN_PASSWORD` as a secret available to Functions. Optionally
-   set `SYSTEM_ADMIN_EMAIL` to the administrator's sign-in email; if omitted,
-   the existing default administrator email is used. Do not put either value
-   in GitHub or in this repository. Netlify keeps these values as site
-   configuration across GitHub-triggered deploys, so this is a one-time setup
-   unless you change the password or create a different Netlify site. If you
-   add or change a variable after a deploy, trigger a new deploy for the
-   function to pick up the updated configuration. The app creates or promotes
-   that account to System Administrator on its first API request. The password
-   is hashed before it is stored in MongoDB Atlas.
-4. Trigger the initial deploy. Afterward, pushes to the selected production
-   branch automatically build `dist/` and deploy the `/api/*` function
-   alongside it.
+1. Import this repository in Vercel and select the branch to deploy. Set the
+   build command to `npm run build`, output directory to `dist`, and Node.js to
+   version 22.
+2. Add a PostgreSQL database through the Vercel project's **Storage** or
+   **Marketplace** page (for example, Neon) and connect it to the project for
+   Production and Preview. The app reads `POSTGRES_URL` or `DATABASE_URL`.
+3. Create a **private** Blob store and connect it to the project for Production
+   and Preview. This supplies the function's Blob credentials. Do not make the
+   store public.
+4. Add `SYSTEM_ADMIN_PASSWORD` as a secret before the first API request.
+   Optionally set `SYSTEM_ADMIN_EMAIL`; if omitted, the existing default
+   administrator email is used. Keep these values out of Git and source code.
+5. Deploy the project. The API creates its tables and indexes on the first
+   request after connecting to PostgreSQL. Existing records and uploaded files
+   are not copied automatically; import them separately if they must remain
+   available.
 
-Switching to Atlas does not migrate records from the previous Netlify
-PostgreSQL database. The old data remains in that database, but the app starts
-with empty MongoDB collections until records are created or migrated
-separately. File bytes for attachments and profile media continue to use
-Netlify Blobs.
+The deployed API uses expiring, HttpOnly sessions. New registrations are
+Employees with no department assignment until an administrator reviews the
+account, assigns its department and role, and approves it. Administrators manage
+all accounts and records; other roles are limited to their own data and the
+requests assigned to their approval workflow.
 
 Each build embeds its UTC build timestamp as the app version, displayed below
-the app name, so the version updates automatically on every Netlify deploy.
+the app name, so the version updates automatically on every Vercel deploy.
 
 ## Download the Android app
 
-On Android, the Netlify site shows a **Download APK** button. It links to the
+On Android, the Vercel site shows a **Download APK** button. It links to the
 latest APK attached to the GitHub repository's release. The Android package
-loads the live site at `https://codhapp2026.netlify.app/`, so it needs an
-internet connection and uses the same Netlify API and database as the website.
+loads the live Vercel site, so it needs an internet connection and uses the
+same API and database as the website.
 
 The `Build Android APK` GitHub Actions workflow builds and publishes the APK
 when changes are pushed to `main`. The repository must be public for people
 without GitHub accounts to download its release asset. After the first
-successful workflow run, `/download-app` on Netlify redirects to the APK.
+successful workflow run, `/download-app` on Vercel redirects to the APK.
 Android may ask the user to allow app installs from their browser before
 installing the downloaded APK. The workflow retains its debug signing key so
 future APK builds can update the installed app; these builds are for direct
 testing/download, not Google Play distribution.
 
-The configured admin password must be entered as a Netlify secret; it cannot be
+The configured admin password must be entered as a Vercel secret; it cannot be
 securely supplied by a GitHub pull or stored in source code. The local demo
 server and its demo accounts remain separate from the deployed database.

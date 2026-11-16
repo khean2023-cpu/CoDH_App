@@ -177,6 +177,14 @@ const server = createServer(async (req, res) => {
         return res.end(Buffer.from(attachment.bytes, "base64"));
       }
 
+      if (resource === "session" && req.method === "GET") {
+        return json(res, { localDemo: true });
+      }
+
+      if (resource === "logout" && req.method === "POST") {
+        return json(res, { ok: true });
+      }
+
       if (resource === "data" && req.method === "GET") {
         const humanResourceDepartmentHeads = state.users.filter(user =>
           user.role === "Department Head" &&

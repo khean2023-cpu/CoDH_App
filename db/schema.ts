@@ -1,5 +1,3 @@
-import type { Document, ObjectId } from "mongodb";
-
 export type LeaveApplicationDetails = {
   formVariant?: "CSC" | "COS";
   position?: string;
@@ -19,7 +17,7 @@ export type LeaveApplicationDetails = {
   commutation?: string;
 };
 
-export interface UserDocument extends Document {
+export interface UserDocument {
   id: string;
   name: string;
   firstName?: string | null;
@@ -46,7 +44,7 @@ export interface UserDocument extends Document {
   createdAt: Date;
 }
 
-export interface RequestDocument extends Document {
+export interface RequestDocument {
   id: string;
   type: string;
   subType?: string | null;
@@ -72,12 +70,11 @@ export interface RequestDocument extends Document {
   approvedBy?: string | null;
   approvalDate?: string | null;
   taggedUsers?: string[] | null;
-  logs?: { date: string; action: string; user: string; signature?: string }[] | null;
+  logs?: { date: string; action: string; user: string; userId?: string; signature?: string }[] | null;
   createdAt: Date;
 }
 
-export interface NotificationDocument extends Document {
-  _id?: ObjectId;
+export interface NotificationDocument {
   id: string;
   userId: string;
   requestId?: string | null;
@@ -88,8 +85,7 @@ export interface NotificationDocument extends Document {
   createdAt: Date;
 }
 
-export interface ArchiveDocument extends Document {
-  _id?: ObjectId;
+export interface ArchiveDocument {
   id: string;
   originalReqId: string;
   applicantId: string;
@@ -103,7 +99,7 @@ export interface ArchiveDocument extends Document {
   createdAt: Date;
 }
 
-export interface AttachmentDocument extends Document {
+export interface AttachmentDocument {
   id: string;
   requestId?: string | null;
   uploadedBy?: string | null;
@@ -114,7 +110,7 @@ export interface AttachmentDocument extends Document {
   createdAt: Date;
 }
 
-export interface ProfileMediaDocument extends Document {
+export interface ProfileMediaDocument {
   id: string;
   userId: string;
   mediaType: string;
@@ -125,8 +121,15 @@ export interface ProfileMediaDocument extends Document {
   createdAt: Date;
 }
 
-export interface SpaceInvadersScoreDocument extends Document {
+export interface SpaceInvadersScoreDocument {
   userId: string;
   highScore: number;
   updatedAt: Date;
+}
+
+export interface SessionDocument {
+  tokenHash: string;
+  userId: string;
+  createdAt: Date;
+  expiresAt: Date;
 }

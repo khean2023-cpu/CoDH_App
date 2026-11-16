@@ -3,7 +3,7 @@
   "appName": "CoDH App",
   "webDir": "dist",
   "server": {
-    "url": "https://codhapp2026.netlify.app/?codh-native=1",
+    "url": "https://khean2023-git-main-co-dh.vercel.app/?codh-native=1",
     "cleartext": false
   }
 }

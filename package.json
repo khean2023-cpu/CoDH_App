@@ -2,20 +2,25 @@
   "name": "codh",
   "private": true,
   "type": "module",
+  "engines": {
+    "node": "22.x"
+  },
   "scripts": {
-    "build": "node scripts/build.mjs",
+    "build": "npm run typecheck && node scripts/build.mjs",
     "dev": "node local-demo-server.js",
+    "typecheck": "tsc --noEmit",
     "android:sync": "npm run build && cap sync android",
     "android:build": "npm run android:sync && cd android && gradlew.bat assembleDebug"
   },
   "dependencies": {
     "@capacitor/android": "^8.6.2",
     "@capacitor/core": "^8.6.2",
-    "@netlify/blobs": "^11.1.7",
-    "@netlify/functions": "^6.0.3",
-    "mongodb": "^7.9.0"
+    "@vercel/blob": "2.4.0",
+    "@neondatabase/serverless": "^1.0.2"
   },
   "devDependencies": {
-    "@capacitor/cli": "^8.6.2"
+    "@capacitor/cli": "^8.6.2",
+    "@types/node": "^22.15.30",
+    "typescript": "^5.9.3"
   }
 }
