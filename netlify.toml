@@ -6,6 +6,12 @@
 [build.environment]
   NODE_VERSION = "22"
 
+[[redirects]]
+  from = "/download-app"
+  to = "https://github.com/khean2023-cpu/CoDH_App/releases/latest/download/CoDH-App.apk"
+  status = 302
+  force = true
+
 [[headers]]
   for = "/sw.js"
   [headers.values]

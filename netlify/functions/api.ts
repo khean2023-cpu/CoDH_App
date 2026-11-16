@@ -1,9 +1,16 @@
 import type { Config } from "@netlify/functions";
 import { randomBytes, scryptSync, timingSafeEqual } from "node:crypto";
-import { and, eq, desc, sql } from "drizzle-orm";
 import { getStore } from "@netlify/blobs";
-import { db } from "../../db/index.js";
-import { users, requests, notifications, archives, attachments, profileMedia, spaceInvadersScores } from "../../db/schema.js";
+import { getDatabase } from "../../db/index.js";
+import type {
+  ArchiveDocument,
+  AttachmentDocument,
+  NotificationDocument,
+  ProfileMediaDocument,
+  RequestDocument,
+  SpaceInvadersScoreDocument,
+  UserDocument,
+} from "../../db/schema.js";
 import { SYSTEM_ADMIN } from "../../db/seed.js";
 
 // --- password helpers ---
@@ -20,8 +27,7 @@ const verifyPassword = (password: string, stored: string) => {
   return expected.length === actual.length && timingSafeEqual(expected, actual);
 };
 
-type UserRow = typeof users.$inferSelect;
-const publicUser = ({ passwordHash, createdAt, ...rest }: UserRow) => rest;
+const publicUser = ({ _id, passwordHash, emailNormalized, createdAt, ...rest }: UserDocument) => rest;
 
 const json = (data: unknown, status = 200) => Response.json(data, { status });
 const error = (message: string, status = 400) => json({ error: message }, status);
@@ -33,56 +39,59 @@ const SYSTEM_ADMIN_PASSWORD_REQUIRED =
 let seeded = false;
 const ensureSeeded = async () => {
   if (seeded) return;
+  const db = await getDatabase();
+  const users = db.collection<UserDocument>("users");
   const email = (process.env.SYSTEM_ADMIN_EMAIL || SYSTEM_ADMIN.email).trim().toLowerCase();
-  let [systemAdmin] = await db
-    .select({ id: users.id, role: users.role, status: users.status })
-    .from(users)
-    .where(sql`lower(${users.email}) = ${email}`)
-    .limit(1);
+  let systemAdmin = await users.findOne({ emailNormalized: email });
 
   if (!systemAdmin) {
     const password = process.env.SYSTEM_ADMIN_PASSWORD;
     if (!password) throw new Error(SYSTEM_ADMIN_PASSWORD_REQUIRED);
 
     const passwordHash = hashPassword(password);
-    const [legacyAdmin] = await db
-      .select({ id: users.id })
-      .from(users)
-      .where(eq(users.id, SYSTEM_ADMIN.id))
-      .limit(1);
+    const legacyAdmin = await users.findOne({ id: SYSTEM_ADMIN.id });
 
     if (legacyAdmin) {
-      await db
-        .update(users)
-        .set({
+      await users.updateOne(
+        { id: legacyAdmin.id },
+        { $set: {
           name: SYSTEM_ADMIN.name,
           email,
+          emailNormalized: email,
           role: SYSTEM_ADMIN.role,
           dept: SYSTEM_ADMIN.dept,
           title: SYSTEM_ADMIN.title,
           passwordHash,
           status: SYSTEM_ADMIN.status,
-        })
-        .where(eq(users.id, legacyAdmin.id));
+        } },
+      );
     } else {
-      await db
-        .insert(users)
-        .values({
+      await users.updateOne(
+        { emailNormalized: email },
+        { $setOnInsert: {
           ...SYSTEM_ADMIN,
           email,
+          emailNormalized: email,
           passwordHash,
-        })
-        .onConflictDoNothing();
+          firstName: null,
+          middleName: null,
+          lastName: null,
+          headOfDept: null,
+          employmentType: "Contract of Service",
+          salary: null,
+          salaryHistory: [],
+          avatar: null,
+          signature: null,
+          createdAt: new Date(),
+        } },
+        { upsert: true },
+      );
     }
 
-    [systemAdmin] = await db
-      .select({ id: users.id, role: users.role, status: users.status })
-      .from(users)
-      .where(sql`lower(${users.email}) = ${email}`)
-      .limit(1);
+    systemAdmin = await users.findOne({ emailNormalized: email });
     if (!systemAdmin) throw new Error("Could not provision the configured system administrator.");
   } else {
-    const adminUpdate: Partial<typeof users.$inferInsert> = {
+    const adminUpdate: Partial<UserDocument> = {
       role: SYSTEM_ADMIN.role,
       dept: SYSTEM_ADMIN.dept,
       title: SYSTEM_ADMIN.title,
@@ -95,18 +104,20 @@ const ensureSeeded = async () => {
       adminUpdate.passwordHash = hashPassword(password);
     }
 
-    await db.update(users).set(adminUpdate).where(eq(users.id, systemAdmin.id));
+    await users.updateOne({ id: systemAdmin.id }, { $set: adminUpdate });
   }
   seeded = true;
 };
 
 const nextRequestId = async () => {
   const year = new Date().getFullYear();
-  const [{ count }] = await db.select({ count: sql<number>`count(*)::int` }).from(requests);
+  const db = await getDatabase();
+  const requests = db.collection<RequestDocument>("requests");
+  const count = await requests.countDocuments();
   for (let n = count + 1; n < count + 1000; n++) {
     const id = `REQ-${year}-${String(n).padStart(3, "0")}`;
-    const existing = await db.select({ id: requests.id }).from(requests).where(eq(requests.id, id));
-    if (existing.length === 0) return id;
+    const existing = await requests.findOne({ id }, { projection: { _id: 1 } });
+    if (!existing) return id;
   }
   return `REQ-${year}-${Date.now()}`;
 };
@@ -121,7 +132,7 @@ const REQUEST_FIELDS = [
 const pickRequest = (body: Record<string, unknown>) => {
   const out: Record<string, unknown> = {};
   for (const key of REQUEST_FIELDS) if (key in body) out[key] = body[key] ?? null;
-  return out as Partial<typeof requests.$inferInsert>;
+  return out as Partial<RequestDocument>;
 };
 
 // --- file uploads ---
@@ -132,9 +143,17 @@ const isJpeg = (bytes: Uint8Array) => bytes[0] === 0xff && bytes[1] === 0xd8 && 
 const uploadsStore = () => getStore({ name: "request-attachments", consistency: "strong" });
 const profileMediaStore = () => getStore({ name: "profile-media", consistency: "strong" });
 
-export default async (req: Request) => {
+const handleApi = async (req: Request) => {
   try {
     await ensureSeeded();
+    const db = await getDatabase();
+    const users = db.collection<UserDocument>("users");
+    const requests = db.collection<RequestDocument>("requests");
+    const notifications = db.collection<NotificationDocument>("notifications");
+    const archives = db.collection<ArchiveDocument>("archives");
+    const attachments = db.collection<AttachmentDocument>("attachments");
+    const profileMedia = db.collection<ProfileMediaDocument>("profileMedia");
+    const spaceInvadersScores = db.collection<SpaceInvadersScoreDocument>("spaceInvadersScores");
 
     const url = new URL(req.url);
     const parts = url.pathname.replace(/^\/api\/?/, "").split("/").filter(Boolean).map(decodeURIComponent);
@@ -144,7 +163,7 @@ export default async (req: Request) => {
     // --- PROFILE MEDIA (raw binary upload, handled before JSON parsing) ---
     if (resource === "profile-media") {
       if (method === "POST" && id && (action === "avatar" || action === "signature")) {
-        const [owner] = await db.select({ id: users.id }).from(users).where(eq(users.id, id));
+        const owner = await users.findOne({ id }, { projection: { _id: 1 } });
         if (!owner) return error("User not found.", 404);
 
         const fileName = decodeURIComponent(req.headers.get("x-file-name") || "profile-image.png").slice(0, 200);
@@ -164,7 +183,7 @@ export default async (req: Request) => {
           metadata: { fileName, contentType, userId: id, mediaType: action },
         });
         try {
-          await db.insert(profileMedia).values({
+          await profileMedia.insertOne({
             id: mediaId,
             userId: id,
             mediaType: action,
@@ -172,6 +191,7 @@ export default async (req: Request) => {
             contentType,
             size: bytes.length,
             blobKey,
+            createdAt: new Date(),
           });
         } catch (err) {
           try {
@@ -189,7 +209,7 @@ export default async (req: Request) => {
       }
 
       if (id && method === "GET") {
-        const [media] = await db.select().from(profileMedia).where(eq(profileMedia.id, id));
+        const media = await profileMedia.findOne({ id });
         if (!media) return error("Profile image not found.", 404);
         const data = await profileMediaStore().get(media.blobKey, { type: "arrayBuffer" });
         if (!data) return error("Profile image file is missing.", 404);
@@ -226,17 +246,23 @@ export default async (req: Request) => {
         await uploadsStore().set(blobKey, bytes.buffer as ArrayBuffer, {
           metadata: { fileName, contentType },
         });
-        const [created] = await db
-          .insert(attachments)
-          .values({ id: attachmentId, uploadedBy, fileName, contentType, size: bytes.length, blobKey })
-          .returning();
-        const { createdAt, blobKey: _k, ...rest } = created;
+        const created: AttachmentDocument = {
+          id: attachmentId,
+          uploadedBy,
+          fileName,
+          contentType,
+          size: bytes.length,
+          blobKey,
+          createdAt: new Date(),
+        };
+        await attachments.insertOne(created);
+        const { _id, createdAt, blobKey: _k, ...rest } = created;
         return json(rest, 201);
       }
 
       // GET /api/attachments/<id> — serve the stored file
       if (id && method === "GET") {
-        const [meta] = await db.select().from(attachments).where(eq(attachments.id, id));
+        const meta = await attachments.findOne({ id });
         if (!meta) return error("Attachment not found.", 404);
         const data = await uploadsStore().get(meta.blobKey, { type: "arrayBuffer" });
         if (!data) return error("Attachment file is missing.", 404);
@@ -256,10 +282,10 @@ export default async (req: Request) => {
     // GET /api/data — everything the dashboard needs
     if (resource === "data" && method === "GET") {
       const [u, r, n, existingArchives] = await Promise.all([
-        db.select().from(users).orderBy(users.createdAt),
-        db.select().from(requests).orderBy(desc(requests.createdAt)),
-        db.select().from(notifications).orderBy(desc(notifications.createdAt)),
-        db.select().from(archives).orderBy(desc(archives.createdAt)),
+        users.find().sort({ createdAt: 1 }).toArray(),
+        requests.find().sort({ createdAt: -1 }).toArray(),
+        notifications.find().sort({ createdAt: -1 }).toArray(),
+        archives.find().sort({ createdAt: -1 }).toArray(),
       ]);
       const humanResourceDepartmentHeads = u.filter(user =>
         user.role === "Department Head" &&
@@ -290,9 +316,11 @@ export default async (req: Request) => {
             read: false,
           })),
       );
-      const createdHrNotifications = missingHrNotifications.length
-        ? await db.insert(notifications).values(missingHrNotifications).returning()
-        : [];
+      const createdHrNotifications: NotificationDocument[] = missingHrNotifications.map(notification => ({
+        ...notification,
+        createdAt: new Date(),
+      }));
+      if (createdHrNotifications.length) await notifications.insertMany(createdHrNotifications);
       const finalizedRequests = r.filter(request => ["Approved", "Rejected"].includes(request.status));
       const existingHrCopies = new Set(
         existingArchives
@@ -315,22 +343,24 @@ export default async (req: Request) => {
             reason: request.reason,
           })),
       );
-      const createdHrCopies = missingHrCopies.length
-        ? await db.insert(archives).values(missingHrCopies).returning()
-        : [];
+      const createdHrCopies: ArchiveDocument[] = missingHrCopies.map(archive => ({
+        ...archive,
+        createdAt: new Date(),
+      }));
+      if (createdHrCopies.length) await archives.insertMany(createdHrCopies);
       const a = [...createdHrCopies, ...existingArchives];
       return json({
         users: u.map(publicUser),
-        requests: r.map(({ createdAt, ...rest }) => rest),
-        notifications: [...createdHrNotifications, ...n].map(({ createdAt, ...rest }) => rest),
-        archives: a.map(({ createdAt, ...rest }) => rest),
+        requests: r.map(({ _id, createdAt, ...rest }) => rest),
+        notifications: [...createdHrNotifications, ...n].map(({ _id, createdAt, ...rest }) => rest),
+        archives: a.map(({ _id, createdAt, ...rest }) => rest),
       });
     }
 
     // POST /api/login
     if (resource === "login" && method === "POST") {
       const email = String(body.email || "").toLowerCase().trim();
-      const [user] = await db.select().from(users).where(sql`lower(${users.email}) = ${email}`);
+      const user = await users.findOne({ emailNormalized: email });
       if (!user) return error("Account not found.", 404);
       if (!verifyPassword(String(body.password || ""), user.passwordHash)) return error("Invalid password.", 401);
       if (user.status === "Pending") return error("Account pending admin approval.", 403);
@@ -341,19 +371,22 @@ export default async (req: Request) => {
     // --- SPACE INVADERS LEADERBOARD ---
     if (resource === "space-invaders") {
       if (method === "GET") {
-        const rows = await db
-          .select({
-            userId: users.id,
-            name: users.name,
-            avatar: users.avatar,
-            highScore: spaceInvadersScores.highScore,
-            updatedAt: spaceInvadersScores.updatedAt,
-          })
-          .from(users)
-          .leftJoin(spaceInvadersScores, eq(spaceInvadersScores.userId, users.id))
-          .where(eq(users.status, "Approved"));
-        const leaderboard = rows
-          .map(row => ({ ...row, highScore: row.highScore || 0 }))
+        const [approvedUsers, scores] = await Promise.all([
+          users.find(
+            { status: "Approved" },
+            { projection: { _id: 0, id: 1, name: 1, avatar: 1 } },
+          ).toArray(),
+          spaceInvadersScores.find().toArray(),
+        ]);
+        const scoresByUser = new Map(scores.map(score => [score.userId, score]));
+        const leaderboard = approvedUsers
+          .map(user => ({
+            userId: user.id,
+            name: user.name,
+            avatar: user.avatar,
+            highScore: scoresByUser.get(user.id)?.highScore || 0,
+            updatedAt: scoresByUser.get(user.id)?.updatedAt || null,
+          }))
           .sort((a, b) => b.highScore - a.highScore || a.name.localeCompare(b.name));
         return json({ leaderboard });
       }
@@ -364,22 +397,17 @@ export default async (req: Request) => {
         if (!userId || !Number.isSafeInteger(score) || score < 0 || score > 10000000) {
           return error("A valid user and score are required.");
         }
-        const [user] = await db
-          .select({ id: users.id })
-          .from(users)
-          .where(and(eq(users.id, userId), eq(users.status, "Approved")))
-          .limit(1);
+        const user = await users.findOne({ id: userId, status: "Approved" }, { projection: { _id: 1 } });
         if (!user) return error("Approved account not found.", 404);
-        await db
-          .insert(spaceInvadersScores)
-          .values({ userId, highScore: score })
-          .onConflictDoUpdate({
-            target: spaceInvadersScores.userId,
-            set: {
-              highScore: sql`greatest(${spaceInvadersScores.highScore}, excluded.high_score)`,
-              updatedAt: new Date(),
-            },
-          });
+        await spaceInvadersScores.updateOne(
+          { userId },
+          {
+            $max: { highScore: score },
+            $set: { updatedAt: new Date() },
+            $setOnInsert: { userId },
+          },
+          { upsert: true },
+        );
         return json({ ok: true });
       }
     }
@@ -394,35 +422,39 @@ export default async (req: Request) => {
             !["Contract of Service", "Permanent"].includes(employmentType)) {
           return error("Please provide your first name, last name, position, employment type, email, and password.");
         }
-        const existing = await db
-          .select({ id: users.id })
-          .from(users)
-          .where(sql`lower(${users.email}) = ${String(email).toLowerCase().trim()}`);
-        if (existing.length) return error("An account with this email already exists.", 409);
+        const existing = await users.findOne(
+          { emailNormalized: String(email).toLowerCase().trim() },
+          { projection: { _id: 1 } },
+        );
+        if (existing) return error("An account with this email already exists.", 409);
         const name = `${String(lastName).trim()}, ${String(firstName).trim()}${String(middleName || "").trim() ? ` ${String(middleName).trim()}` : ""}`;
-        const [created] = await db
-          .insert(users)
-          .values({
-            id: `emp-${Date.now()}`,
-            name,
-            firstName: String(firstName).trim(),
-            middleName: String(middleName || "").trim() || null,
-            lastName: String(lastName).trim(),
-            email: String(email).trim(),
-            role: role || "Employee",
-            dept,
-            headOfDept: headOfDept ?? null,
-            title,
-            employmentType,
-            passwordHash: hashPassword(String(password)),
-            status: "Pending",
-          })
-          .returning();
+        const created: UserDocument = {
+          id: `emp-${Date.now()}`,
+          name,
+          firstName: String(firstName).trim(),
+          middleName: String(middleName || "").trim() || null,
+          lastName: String(lastName).trim(),
+          email: String(email).trim(),
+          emailNormalized: String(email).toLowerCase().trim(),
+          role: role || "Employee",
+          dept: dept ?? null,
+          headOfDept: headOfDept ?? null,
+          title,
+          employmentType,
+          salary: null,
+          salaryHistory: [],
+          avatar: null,
+          signature: null,
+          passwordHash: hashPassword(String(password)),
+          status: "Pending",
+          createdAt: new Date(),
+        };
+        await users.insertOne(created);
         return json(publicUser(created), 201);
       }
 
       if (id && method === "PUT") {
-        const [user] = await db.select().from(users).where(eq(users.id, id));
+        const user = await users.findOne({ id });
         if (!user) return error("User not found.", 404);
         const employmentType = "employmentType" in body
           ? String(body.employmentType || "")
@@ -439,9 +471,12 @@ export default async (req: Request) => {
           if (!verifyPassword(currentPassword, user.passwordHash)) return error("Current password is incorrect.", 401);
         }
 
-        const updates: Partial<typeof users.$inferInsert> = {};
+        const updates: Partial<UserDocument> = {};
         for (const key of ["email", "role", "dept", "headOfDept", "avatar", "signature", "status"] as const) {
           if (key in body) (updates as Record<string, unknown>)[key] = body[key];
+        }
+        if ("email" in body) {
+          updates.emailNormalized = String(body.email).toLowerCase().trim();
         }
         const hasNameFields = ["firstName", "middleName", "lastName"].some(key => key in body);
         if (hasNameFields) {
@@ -482,13 +517,14 @@ export default async (req: Request) => {
         }
         if (body.newPassword) updates.passwordHash = hashPassword(String(body.newPassword));
         if (body.password) updates.passwordHash = hashPassword(String(body.password));
-        const [updated] = await db.update(users).set(updates).where(eq(users.id, id)).returning();
+        await users.updateOne({ id }, { $set: updates });
+        const updated = await users.findOne({ id });
         if (!updated) return error("User not found.", 404);
         return json(publicUser(updated));
       }
 
       if (id && method === "DELETE") {
-        await db.delete(users).where(eq(users.id, id));
+        await users.deleteOne({ id });
         return json({ ok: true });
       }
     }
@@ -498,26 +534,49 @@ export default async (req: Request) => {
       if (method === "POST" && !id) {
         const values = pickRequest(body);
         if (!values.type || !values.applicantId) return error("Missing request type or applicant.");
-        const [created] = await db
-          .insert(requests)
-          .values({
-            ...values,
-            id: await nextRequestId(),
-            status: values.status || "Pending Dept Head Approval",
-            hrApproval: values.hrApproval || "Pending",
-          } as typeof requests.$inferInsert)
-          .returning();
+        const created: RequestDocument = {
+          subType: null,
+          section: null,
+          applicantName: null,
+          dateFiled: null,
+          logDate: null,
+          timeIn: null,
+          timeOut: null,
+          startDate: null,
+          endDate: null,
+          totalDays: null,
+          leaveDetails: null,
+          extraOffDate: null,
+          reason: null,
+          attachmentName: null,
+          attachmentId: null,
+          deptHeadApproval: null,
+          finalApproval: null,
+          approvedBy: null,
+          approvalDate: null,
+          taggedUsers: [],
+          logs: [],
+          ...values,
+          id: await nextRequestId(),
+          status: values.status || "Pending Dept Head Approval",
+          hrApproval: values.hrApproval || "Pending",
+          applicantId: values.applicantId,
+          type: values.type,
+          createdAt: new Date(),
+        };
+        await requests.insertOne(created);
         if (created.attachmentId) {
-          await db.update(attachments).set({ requestId: created.id }).where(eq(attachments.id, created.attachmentId));
+          await attachments.updateOne({ id: created.attachmentId }, { $set: { requestId: created.id } });
         }
-        const { createdAt, ...rest } = created;
+        const { _id, createdAt, ...rest } = created;
         return json(rest, 201);
       }
 
       if (id && method === "PUT") {
-        const [updated] = await db.update(requests).set(pickRequest(body)).where(eq(requests.id, id)).returning();
+        await requests.updateOne({ id }, { $set: pickRequest(body) });
+        const updated = await requests.findOne({ id });
         if (!updated) return error("Request not found.", 404);
-        const { createdAt, ...rest } = updated;
+        const { _id, createdAt, ...rest } = updated;
         return json(rest);
       }
     }
@@ -527,10 +586,17 @@ export default async (req: Request) => {
       if (method === "POST" && !id) {
         const { userId, requestId, title, message, date } = body;
         if (!userId || !title || !message) return error("Missing notification fields.");
-        const [created] = await db
-          .insert(notifications)
-          .values({ id: `notif-${Date.now()}-${randomBytes(3).toString("hex")}`, userId, requestId: requestId ?? null, title, message, date, read: false })
-          .returning();
+        const created: NotificationDocument = {
+          id: `notif-${Date.now()}-${randomBytes(3).toString("hex")}`,
+          userId,
+          requestId: requestId ?? null,
+          title,
+          message,
+          date,
+          read: false,
+          createdAt: new Date(),
+        };
+        await notifications.insertOne(created);
         return json(created, 201);
       }
 
@@ -538,12 +604,11 @@ export default async (req: Request) => {
       if (id && action === "read" && method === "POST") {
         const userId = String(body.userId || "");
         if (!userId) return error("Missing notification owner.");
-        const [updated] = await db
-          .update(notifications)
-          .set({ read: true })
-          .where(and(eq(notifications.id, id), eq(notifications.userId, userId)))
-          .returning({ id: notifications.id });
-        if (!updated) return error("Notification not found.", 404);
+        const updated = await notifications.updateOne(
+          { id, userId },
+          { $set: { read: true } },
+        );
+        if (!updated.matchedCount) return error("Notification not found.", 404);
         return json({ ok: true });
       }
     }
@@ -552,13 +617,20 @@ export default async (req: Request) => {
     if (resource === "archives" && method === "POST" && !id) {
       const { originalReqId, applicantId, recipientId, applicantName, type, section, status, archivedDate, reason } = body;
       if (!originalReqId || !applicantId) return error("Missing archive fields.");
-      const [created] = await db
-        .insert(archives)
-        .values({
-          id: `ARCH-${Date.now()}-${randomBytes(3).toString("hex")}`,
-          originalReqId, applicantId, recipientId: recipientId ?? applicantId, applicantName, type, section, status, archivedDate, reason,
-        })
-        .returning();
+      const created: ArchiveDocument = {
+        id: `ARCH-${Date.now()}-${randomBytes(3).toString("hex")}`,
+        originalReqId,
+        applicantId,
+        recipientId: recipientId ?? applicantId,
+        applicantName,
+        type,
+        section,
+        status,
+        archivedDate,
+        reason,
+        createdAt: new Date(),
+      };
+      await archives.insertOne(created);
       return json(created, 201);
     }
 
@@ -568,8 +640,21 @@ export default async (req: Request) => {
     if (err instanceof Error && err.message === SYSTEM_ADMIN_PASSWORD_REQUIRED) {
       return error(SYSTEM_ADMIN_PASSWORD_REQUIRED, 500);
     }
+    if (err instanceof Error && (
+      err.message === "Set the MONGODB_URI environment variable in Netlify." ||
+      err.message.startsWith("MONGODB_DATABASE must")
+    )) {
+      return error(err.message, 500);
+    }
     return error("Server error. Please try again.", 500);
   }
+};
+
+export default async (req: Request) => {
+  if (req.method === "OPTIONS") {
+    return new Response(null, { status: 204 });
+  }
+  return handleApi(req);
 };
 
 export const config: Config = {

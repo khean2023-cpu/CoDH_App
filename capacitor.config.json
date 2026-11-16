@@ -1,0 +1,9 @@
+{
+  "appId": "org.codh.app",
+  "appName": "CoDH App",
+  "webDir": "dist",
+  "server": {
+    "url": "https://codhapp2026.netlify.app/?codh-native=1",
+    "cleartext": false
+  }
+}
