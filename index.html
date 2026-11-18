@@ -1111,7 +1111,24 @@
       'Special Leave Benefits for Women',
       'Special Emergency (Calamity) Leave',
       'Adoption Leave',
+      'Wellness Leave',
       'Others'
+    ];
+    const LEAVE_CREDIT_TYPES = [
+      { key: 'vacation', label: 'Vacation Leave', icon: 'calendar' },
+      { key: 'sick', label: 'Sick Leave', icon: 'shield-check' },
+      { key: 'mandatoryForced', label: 'Mandatory/Forced Leave', icon: 'clock' },
+      { key: 'maternity', label: 'Maternity Leave', icon: 'user' },
+      { key: 'paternity', label: 'Paternity Leave', icon: 'user-check' },
+      { key: 'specialPrivilege', label: 'Special Privilege Leave', icon: 'sparkles' },
+      { key: 'soloParent', label: 'Solo Parent Leave', icon: 'users' },
+      { key: 'study', label: 'Study Leave', icon: 'file-text' },
+      { key: 'vawc', label: '10-Day VAWC Leave', icon: 'shield-check' },
+      { key: 'rehabilitation', label: 'Rehabilitation Privilege', icon: 'alert-circle' },
+      { key: 'specialLeaveForWomen', label: 'Special Leave Benefits for Women', icon: 'award' },
+      { key: 'specialEmergency', label: 'Special Emergency (Calamity) Leave', icon: 'alert-circle' },
+      { key: 'adoption', label: 'Adoption Leave', icon: 'user-check' },
+      { key: 'wellness', label: 'Wellness Leave', icon: 'sparkles' }
     ];
     const COS_LEAVE_TYPES = [
       'Vacation Leave w/o pay',
@@ -2600,13 +2617,16 @@
       }
 
       const saveLeaveCredits = async employee => {
-        const draft = leaveCreditDrafts[employee.id] || {
-          vacation: employee.leaveCredits?.vacation == null ? '' : String(employee.leaveCredits.vacation),
-          sick: employee.leaveCredits?.sick == null ? '' : String(employee.leaveCredits.sick)
-        };
-        const isValidCredit = value => /^\d{1,4}(\.\d{1,2})?$/.test(value) && Number(value) <= 9999.99;
-        if (!isValidCredit(draft.vacation) || !isValidCredit(draft.sick)) {
-          triggerToast('Enter both balances as non-negative numbers with up to two decimals.', 'error');
+        const draft = leaveCreditDrafts[employee.id] || Object.fromEntries(
+          LEAVE_CREDIT_TYPES.map(({ key }) => [
+            key,
+            employee.leaveCredits?.[key] == null ? '' : String(employee.leaveCredits[key])
+          ])
+        );
+        const isValidCredit = value => value === '' ||
+          (/^\d{1,4}(\.\d{1,2})?$/.test(value) && Number(value) <= 9999.99);
+        if (LEAVE_CREDIT_TYPES.some(({ key }) => !isValidCredit(draft[key]))) {
+          triggerToast('Enter non-negative leave balances with up to two decimals.', 'error');
           return;
         }
 
@@ -2614,7 +2634,12 @@
         try {
           const updated = await api(`users/${encodeURIComponent(employee.id)}`, {
             method: 'PUT',
-            body: { leaveCredits: { vacation: Number(draft.vacation), sick: Number(draft.sick) } }
+            body: {
+              leaveCredits: Object.fromEntries(LEAVE_CREDIT_TYPES.map(({ key }) => [
+                key,
+                draft[key] === '' ? null : Number(draft[key])
+              ]))
+            }
           });
           setEmployees(current => current.map(user => user.id === employee.id ? { ...user, ...updated } : user));
           setLeaveCreditDrafts(current => {
@@ -3768,26 +3793,18 @@
                   </div>
                 </div>
 
-                <div className="grid min-h-0 flex-1 content-start grid-cols-2 gap-3 xl:grid-cols-4">
+                <div className="grid min-h-0 flex-1 content-start grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-4">
                   {currentUser.role === 'Employee' && currentUser.employmentType === 'Permanent' && (
-                    <>
-                      <section className="rounded-2xl border border-emerald-500/20 bg-gradient-to-br from-emerald-950/70 to-slate-950 p-4">
+                    LEAVE_CREDIT_TYPES.map(({ key, label, icon }) => (
+                      <section key={key} className="min-w-0 rounded-2xl border border-emerald-500/20 bg-gradient-to-br from-emerald-950/70 to-slate-950 p-4">
                         <div className="flex items-start justify-between gap-2">
-                          <p className="text-[10px] font-bold uppercase tracking-wider text-emerald-300">Vacation Leave</p>
-                          <Icon name="calendar" className="h-5 w-5 shrink-0 text-emerald-300" />
+                          <p className="min-h-7 text-[10px] font-bold uppercase tracking-wider text-emerald-300">{label}</p>
+                          <Icon name={icon} className="h-5 w-5 shrink-0 text-emerald-300" />
                         </div>
-                        <p className="mt-2 text-2xl font-black text-white">{currentUser.leaveCredits?.vacation ?? 'Not set'}</p>
+                        <p className="mt-2 text-2xl font-black text-white">{currentUser.leaveCredits?.[key] ?? 'Not set'}</p>
                         <p className="text-[10px] text-slate-500">days remaining</p>
                       </section>
-                      <section className="rounded-2xl border border-sky-500/20 bg-gradient-to-br from-sky-950/70 to-slate-950 p-4">
-                        <div className="flex items-start justify-between gap-2">
-                          <p className="text-[10px] font-bold uppercase tracking-wider text-sky-300">Sick Leave</p>
-                          <Icon name="shield-check" className="h-5 w-5 shrink-0 text-sky-300" />
-                        </div>
-                        <p className="mt-2 text-2xl font-black text-white">{currentUser.leaveCredits?.sick ?? 'Not set'}</p>
-                        <p className="text-[10px] text-slate-500">days remaining</p>
-                      </section>
-                    </>
+                    ))
                   )}
                   {canManageLeaveCredits && (
                     <button
@@ -3812,7 +3829,7 @@
                 <div className="flex flex-wrap items-center justify-between gap-3">
                   <div>
                     <h2 className="text-lg font-bold text-white">Permanent Employee Leave Credits</h2>
-                    <p className="mt-1 text-xs text-slate-400">Set current vacation and sick leave balances.</p>
+                    <p className="mt-1 text-xs text-slate-400">Set current balances for each leave type.</p>
                   </div>
                   <button
                     type="button"
@@ -3829,50 +3846,39 @@
                 ) : (
                   <div className="space-y-3">
                     {[...approvedEmployees].sort((a, b) => a.name.localeCompare(b.name)).map(employee => {
-                      const draft = leaveCreditDrafts[employee.id] || {
-                        vacation: employee.leaveCredits?.vacation == null ? '' : String(employee.leaveCredits.vacation),
-                        sick: employee.leaveCredits?.sick == null ? '' : String(employee.leaveCredits.sick)
-                      };
+                      const draft = leaveCreditDrafts[employee.id] || Object.fromEntries(
+                        LEAVE_CREDIT_TYPES.map(({ key }) => [
+                          key,
+                          employee.leaveCredits?.[key] == null ? '' : String(employee.leaveCredits[key])
+                        ])
+                      );
                       return (
-                        <article key={employee.id} className="grid gap-3 rounded-2xl border border-slate-800 bg-slate-950 p-4 sm:grid-cols-[minmax(0,1fr)_8rem_8rem_auto] sm:items-end">
-                          <div className="min-w-0">
+                        <article key={employee.id} className="space-y-4 rounded-2xl border border-slate-800 bg-slate-950 p-4">
+                          <header className="min-w-0">
                             <h3 className="truncate text-sm font-bold text-white">{employee.name}</h3>
                             <p className="mt-1 truncate text-[10px] text-slate-400">{employee.dept || 'No department'}</p>
+                          </header>
+                          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                            {LEAVE_CREDIT_TYPES.map(({ key, label }) => (
+                              <label key={key} className="space-y-1">
+                                <span className="block text-[10px] font-semibold text-slate-400">{label} days</span>
+                                <input
+                                  type="number"
+                                  min="0"
+                                  max="9999.99"
+                                  step="0.01"
+                                  inputMode="decimal"
+                                  value={draft[key]}
+                                  onChange={event => setLeaveCreditDrafts(current => ({
+                                    ...current,
+                                    [employee.id]: { ...draft, [key]: event.target.value }
+                                  }))}
+                                  aria-label={`${employee.name} ${label.toLowerCase()} credits`}
+                                  className="w-full rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-xs text-white"
+                                />
+                              </label>
+                            ))}
                           </div>
-                          <label className="space-y-1">
-                            <span className="block text-[10px] font-semibold text-slate-400">Vacation days</span>
-                            <input
-                              type="number"
-                              min="0"
-                              max="9999.99"
-                              step="0.01"
-                              inputMode="decimal"
-                              value={draft.vacation}
-                              onChange={event => setLeaveCreditDrafts(current => ({
-                                ...current,
-                                [employee.id]: { ...draft, vacation: event.target.value }
-                              }))}
-                              aria-label={`${employee.name} vacation leave credits`}
-                              className="w-full rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-xs text-white"
-                            />
-                          </label>
-                          <label className="space-y-1">
-                            <span className="block text-[10px] font-semibold text-slate-400">Sick days</span>
-                            <input
-                              type="number"
-                              min="0"
-                              max="9999.99"
-                              step="0.01"
-                              inputMode="decimal"
-                              value={draft.sick}
-                              onChange={event => setLeaveCreditDrafts(current => ({
-                                ...current,
-                                [employee.id]: { ...draft, sick: event.target.value }
-                              }))}
-                              aria-label={`${employee.name} sick leave credits`}
-                              className="w-full rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-xs text-white"
-                            />
-                          </label>
                           <button
                             type="button"
                             onClick={() => saveLeaveCredits(employee)}

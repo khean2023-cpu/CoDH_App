@@ -41,8 +41,20 @@ export interface UserDocument {
     newSalary: string;
   }[];
   leaveCredits?: {
-    vacation: number;
-    sick: number;
+    vacation?: number | null;
+    sick?: number | null;
+    mandatoryForced?: number | null;
+    maternity?: number | null;
+    paternity?: number | null;
+    specialPrivilege?: number | null;
+    soloParent?: number | null;
+    study?: number | null;
+    vawc?: number | null;
+    rehabilitation?: number | null;
+    specialLeaveForWomen?: number | null;
+    specialEmergency?: number | null;
+    adoption?: number | null;
+    wellness?: number | null;
     updatedAt: string;
     updatedBy: string;
   } | null;
