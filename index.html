@@ -1258,7 +1258,11 @@
       const notificationSnapshot = useRef({ userId: null, ids: new Set() });
       const [isRoleSimulationOpen, setIsRoleSimulationOpen] = useState(false);
 
-      const [activeTab, setActiveTab] = useState(savedSession?.activeTab === 'approvals' ? 'archives' : savedSession?.activeTab || 'dashboard');
+      const [activeTab, setActiveTab] = useState(
+        savedSession?.activeTab === 'approvals' || savedSession?.activeTab === 'leave-credits'
+          ? 'archives'
+          : savedSession?.activeTab || 'dashboard'
+      );
       const [salaryPortalReturnTab, setSalaryPortalReturnTab] = useState('dashboard');
       const [selectedRequestForModal, setSelectedRequestForModal] = useState(null);
       const [editingRequest, setEditingRequest] = useState(null);
@@ -1272,7 +1276,6 @@
       const [profileSignatureCleared, setProfileSignatureCleared] = useState(false);
       const [isEditingProfile, setIsEditingProfile] = useState(false);
       const canManageLeaveCredits = currentUser?.status === 'Approved' && (
-        currentUser.role === 'Admin' ||
         currentUser.role === 'Human Resource' ||
         isHumanResourceDepartmentHead(currentUser)
       );
@@ -3154,18 +3157,6 @@
                 </button>
               )}
 
-              {canManageLeaveCredits && (
-                <button
-                  type="button"
-                  onClick={() => handleNavigationClick('leave-credits')}
-                  aria-current={activeTab === 'leave-credits' ? 'page' : undefined}
-                  className={`w-full min-w-0 min-h-11 flex items-center space-x-2 lg:space-x-3 px-3 lg:px-4 py-2 lg:py-3 rounded-xl text-xs font-semibold leading-tight text-left ${activeTab === 'leave-credits' ? 'bg-indigo-600 text-white' : 'text-slate-400 hover:bg-slate-900'}`}
-                >
-                  <Icon name="file-text" className="w-4 h-4" />
-                  <span>Leave Credits</span>
-                </button>
-              )}
-
               {currentUser.role === 'Chief of Hospital' && (
                 <button
                   type="button"
@@ -3806,93 +3797,8 @@
                       </section>
                     ))
                   )}
-                  {canManageLeaveCredits && (
-                    <button
-                      type="button"
-                      onClick={() => setActiveTab('leave-credits')}
-                      className="rounded-2xl border border-violet-500/20 bg-gradient-to-br from-violet-950/70 to-slate-950 p-4 text-left hover:border-violet-400/50"
-                    >
-                      <div className="flex items-start justify-between gap-2">
-                        <p className="text-[10px] font-bold uppercase tracking-wider text-violet-300">Leave Credits</p>
-                        <Icon name="file-text" className="h-5 w-5 shrink-0 text-violet-300" />
-                      </div>
-                      <p className="mt-2 text-sm font-black text-white">Manage Balances</p>
-                      <p className="text-[10px] text-slate-500">set permanent employee balances</p>
-                    </button>
-                  )}
                 </div>
               </div>
-            )}
-
-            {activeTab === 'leave-credits' && canManageLeaveCredits && (
-              <section className="mx-auto w-full max-w-5xl space-y-4">
-                <div className="flex flex-wrap items-center justify-between gap-3">
-                  <div>
-                    <h2 className="text-lg font-bold text-white">Permanent Employee Leave Credits</h2>
-                    <p className="mt-1 text-xs text-slate-400">Set current balances for each leave type.</p>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => setActiveTab('dashboard')}
-                    className="rounded-lg border border-slate-700 px-3 py-2 text-xs font-semibold text-slate-300 hover:bg-slate-800"
-                  >
-                    Back to Dashboard
-                  </button>
-                </div>
-                {approvedEmployees.length === 0 ? (
-                  <div className="rounded-2xl border border-slate-800 bg-slate-950 p-6 text-center text-xs text-slate-400">
-                    No approved permanent employee accounts are available.
-                  </div>
-                ) : (
-                  <div className="space-y-3">
-                    {[...approvedEmployees].sort((a, b) => a.name.localeCompare(b.name)).map(employee => {
-                      const draft = leaveCreditDrafts[employee.id] || Object.fromEntries(
-                        LEAVE_CREDIT_TYPES.map(({ key }) => [
-                          key,
-                          employee.leaveCredits?.[key] == null ? '' : String(employee.leaveCredits[key])
-                        ])
-                      );
-                      return (
-                        <article key={employee.id} className="space-y-4 rounded-2xl border border-slate-800 bg-slate-950 p-4">
-                          <header className="min-w-0">
-                            <h3 className="truncate text-sm font-bold text-white">{employee.name}</h3>
-                            <p className="mt-1 truncate text-[10px] text-slate-400">{employee.dept || 'No department'}</p>
-                          </header>
-                          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-                            {LEAVE_CREDIT_TYPES.map(({ key, label }) => (
-                              <label key={key} className="space-y-1">
-                                <span className="block text-[10px] font-semibold text-slate-400">{label} days</span>
-                                <input
-                                  type="number"
-                                  min="0"
-                                  max="9999.99"
-                                  step="0.01"
-                                  inputMode="decimal"
-                                  value={draft[key]}
-                                  onChange={event => setLeaveCreditDrafts(current => ({
-                                    ...current,
-                                    [employee.id]: { ...draft, [key]: event.target.value }
-                                  }))}
-                                  aria-label={`${employee.name} ${label.toLowerCase()} credits`}
-                                  className="w-full rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-xs text-white"
-                                />
-                              </label>
-                            ))}
-                          </div>
-                          <button
-                            type="button"
-                            onClick={() => saveLeaveCredits(employee)}
-                            disabled={savingLeaveCreditUser === employee.id}
-                            className="rounded-lg bg-emerald-600 px-4 py-2 text-xs font-bold text-white hover:bg-emerald-500 disabled:cursor-not-allowed disabled:opacity-50"
-                          >
-                            {savingLeaveCreditUser === employee.id ? 'Saving…' : 'Save'}
-                          </button>
-                        </article>
-                      );
-                    })}
-                  </div>
-                )}
-              </section>
             )}
 
             {activeTab === 'department-employees' && currentUser.role === 'Department Head' && currentUser.status === 'Approved' && (
@@ -4108,6 +4014,67 @@
                   )}
                 </div>
                 </div>
+                {canManageLeaveCredits && (
+                  <section className="space-y-4 rounded-2xl border border-violet-500/30 bg-slate-950 p-4 sm:p-5">
+                    <header className="border-b border-slate-800 pb-3">
+                      <h3 className="text-base font-bold text-white">Manage Leave Balances</h3>
+                      <p className="mt-1 text-xs text-slate-400">Set current balances for approved permanent employees.</p>
+                    </header>
+                    {approvedEmployees.length === 0 ? (
+                      <div className="rounded-2xl border border-slate-800 bg-slate-950 p-6 text-center text-xs text-slate-400">
+                        No approved permanent employee accounts are available.
+                      </div>
+                    ) : (
+                      <div className="space-y-3">
+                        {[...approvedEmployees].sort((a, b) => a.name.localeCompare(b.name)).map(employee => {
+                          const draft = leaveCreditDrafts[employee.id] || Object.fromEntries(
+                            LEAVE_CREDIT_TYPES.map(({ key }) => [
+                              key,
+                              employee.leaveCredits?.[key] == null ? '' : String(employee.leaveCredits[key])
+                            ])
+                          );
+                          return (
+                            <article key={employee.id} className="space-y-4 rounded-2xl border border-slate-800 bg-slate-950 p-4">
+                              <header className="min-w-0">
+                                <h4 className="truncate text-sm font-bold text-white">{employee.name}</h4>
+                                <p className="mt-1 truncate text-[10px] text-slate-400">{employee.dept || 'No department'}</p>
+                              </header>
+                              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                                {LEAVE_CREDIT_TYPES.map(({ key, label }) => (
+                                  <label key={key} className="space-y-1">
+                                    <span className="block text-[10px] font-semibold text-slate-400">{label} days</span>
+                                    <input
+                                      type="number"
+                                      min="0"
+                                      max="9999.99"
+                                      step="0.01"
+                                      inputMode="decimal"
+                                      value={draft[key]}
+                                      onChange={event => setLeaveCreditDrafts(current => ({
+                                        ...current,
+                                        [employee.id]: { ...draft, [key]: event.target.value }
+                                      }))}
+                                      aria-label={`${employee.name} ${label.toLowerCase()} credits`}
+                                      className="w-full rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-xs text-white"
+                                    />
+                                  </label>
+                                ))}
+                              </div>
+                              <button
+                                type="button"
+                                onClick={() => saveLeaveCredits(employee)}
+                                disabled={savingLeaveCreditUser === employee.id}
+                                className="rounded-lg bg-emerald-600 px-4 py-2 text-xs font-bold text-white hover:bg-emerald-500 disabled:cursor-not-allowed disabled:opacity-50"
+                              >
+                                {savingLeaveCreditUser === employee.id ? 'Saving…' : 'Save'}
+                              </button>
+                            </article>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </section>
+                )}
               </>
             )}
 
