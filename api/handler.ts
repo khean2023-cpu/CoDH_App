@@ -2,7 +2,12 @@ import type { Collection } from "../db/index.js";
 import { createHash, randomBytes, scryptSync, timingSafeEqual } from "node:crypto";
 import { deleteStoredBlob, getStoredBlob, setStoredBlob } from "../db/blob-storage.js";
 import { getDatabase } from "../db/index.js";
-import { canAccessRequest, createApprovalUpdate, isHumanResourceReviewer } from "./authorization.js";
+import {
+  canAccessRequest,
+  canManageLeaveCredits,
+  createApprovalUpdate,
+  isHumanResourceReviewer,
+} from "./authorization.js";
 import type {
   ArchiveDocument,
   AttachmentDocument,
@@ -36,15 +41,27 @@ const publicUser = (user: UserDocument, viewer?: UserDocument) => {
     createdAt,
     salary,
     salaryHistory,
+    leaveCredits,
     signature,
     requestedRole,
     requestedDept,
     requestedEmploymentType,
     ...rest
   } = user;
+  const safeLeaveCredits = leaveCredits ? { leaveCredits } : {};
   if (viewer && (viewer.role === "Admin" || viewer.id === user.id)) {
-    return { ...rest, salary, salaryHistory, signature, requestedRole, requestedDept, requestedEmploymentType };
+    return {
+      ...rest,
+      salary,
+      salaryHistory,
+      ...safeLeaveCredits,
+      signature,
+      requestedRole,
+      requestedDept,
+      requestedEmploymentType,
+    };
   }
+  if (viewer && canManageLeaveCredits(viewer)) return { ...rest, ...safeLeaveCredits };
   return rest;
 };
 
@@ -672,10 +689,56 @@ export const handleApi = async (req: Request, apiPath?: string) => {
     if (resource === "users") {
       if (id && method === "PUT") {
         if (actor.role !== "Admin" && id !== actor.id) {
-          return error("You cannot update another user's account.", 403);
+          if (!canManageLeaveCredits(actor) || Object.keys(body).length !== 1 || !("leaveCredits" in body)) {
+            return error("You cannot update another user's account.", 403);
+          }
         }
         const user = await users.findOne({ id });
         if (!user) return error("User not found.", 404);
+        if ("leaveCredits" in body) {
+          if (Object.keys(body).length !== 1) {
+            return error("Leave credits must be updated separately from other account fields.");
+          }
+          if (!canManageLeaveCredits(actor)) {
+            return error("Only Human Resource or an administrator can update leave credits.", 403);
+          }
+          if (user.role !== "Employee" || user.status !== "Approved" || user.employmentType !== "Permanent") {
+            return error("Leave credits can only be assigned to approved permanent employee accounts.");
+          }
+          const value = body.leaveCredits;
+          if (!value || typeof value !== "object" || Array.isArray(value)) {
+            return error("Enter valid vacation and sick leave credits.");
+          }
+          const creditValues = value as Record<string, unknown>;
+          const vacation = creditValues.vacation;
+          const sick = creditValues.sick;
+          const isValidCredit = (credit: unknown): credit is number =>
+            typeof credit === "number" &&
+            Number.isFinite(credit) &&
+            credit >= 0 &&
+            credit <= 9999.99 &&
+            Math.abs(credit * 100 - Math.round(credit * 100)) < 1e-8;
+          if (!isValidCredit(vacation) || !isValidCredit(sick)) {
+            return error("Leave credits must be non-negative numbers with up to two decimal places.");
+          }
+
+          await users.updateOne(
+            { id },
+            {
+              $set: {
+                leaveCredits: {
+                  vacation,
+                  sick,
+                  updatedAt: new Date().toISOString(),
+                  updatedBy: actor.id,
+                },
+              },
+            },
+          );
+          const updated = await users.findOne({ id });
+          if (!updated) return error("User not found.", 404);
+          return json(publicUser(updated, actor));
+        }
         if ("avatar" in body && !await isOwnedProfileMedia(body.avatar, id, "avatar", profileMedia)) {
           return error("Select a valid profile image.", 400);
         }

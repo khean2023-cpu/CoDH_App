@@ -6,6 +6,10 @@ const isHumanResourceDepartmentHead = (user: UserDocument) =>
   user.role === "Department Head" &&
   (user.headOfDept || user.dept) === "Human Resource Department";
 
+export const canManageLeaveCredits = (user: UserDocument) =>
+  isApproved(user) &&
+  (user.role === "Admin" || user.role === "Human Resource" || isHumanResourceDepartmentHead(user));
+
 export const isHumanResourceReviewer = (user: UserDocument, users: UserDocument[]) => {
   const hasHumanResourceDepartmentHead = users.some(candidate =>
     isApproved(candidate) && isHumanResourceDepartmentHead(candidate),
