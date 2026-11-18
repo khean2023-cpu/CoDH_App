@@ -102,10 +102,11 @@ the app name, so the version updates automatically on every Vercel deploy.
 
 ## Download the Android app
 
-On Android, the Vercel site shows a **Download APK** button. It links to the
-latest APK attached to the GitHub repository's release. The Android package
-loads the live Vercel site, so it needs an internet connection and uses the
-same API and database as the website.
+On Android, the Vercel site shows a **Download APK** button. It asks for
+confirmation before downloading the latest APK attached to the GitHub
+repository's release; Android separately asks before installing it. The
+Android package opens the live Vercel site inside the app and needs an internet
+connection, using the same API and database as the website.
 
 The `Build Android APK` GitHub Actions workflow builds and publishes the APK
 when changes are pushed to `main`. The repository must be public for people

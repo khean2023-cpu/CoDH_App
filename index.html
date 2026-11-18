@@ -5467,7 +5467,17 @@
               )}
               <div className="flex gap-2 mt-3">
                 {isAndroid && (
-                  <a href="/download-app" className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs rounded-lg">Download APK</a>
+                  <a
+                    href="/download-app"
+                    onClick={event => {
+                      if (!window.confirm('Download the APK now? Android will ask separately before installing it.')) {
+                        event.preventDefault();
+                      }
+                    }}
+                    className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs rounded-lg"
+                  >
+                    Download APK
+                  </a>
                 )}
                 {deferred && (
                   <button onClick={install} className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs rounded-lg">Install web app</button>
