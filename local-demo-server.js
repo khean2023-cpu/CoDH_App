@@ -78,6 +78,22 @@ const json = (res, body, status = 200) => {
 };
 const fail = (res, message, status = 400) => json(res, { error: message }, status);
 const publicUser = ({ password, ...user }) => user;
+const leaveCreditFields = new Set([
+  "vacation",
+  "sick",
+  "mandatoryForced",
+  "maternity",
+  "paternity",
+  "specialPrivilege",
+  "soloParent",
+  "study",
+  "vawc",
+  "rehabilitation",
+  "specialLeaveForWomen",
+  "specialEmergency",
+  "adoption",
+  "wellness",
+]);
 const readBody = (req, limit = 1024 * 1024) => new Promise((resolveBody, reject) => {
   const chunks = [];
   let length = 0;
@@ -350,6 +366,33 @@ const server = createServer(async (req, res) => {
         const body = JSON.parse((await readBody(req)).toString("utf8") || "{}");
         const user = state.users.find(item => item.id === id);
         if (!user) return fail(res, "User not found.", 404);
+        if ("leaveCredits" in body) {
+          if (Object.keys(body).length !== 1) return fail(res, "Leave credits must be updated separately from other account fields.");
+          if (user.role !== "Employee" || user.status !== "Approved" || user.employmentType !== "Permanent") {
+            return fail(res, "Leave credits can only be assigned to approved permanent employee accounts.");
+          }
+          const value = body.leaveCredits;
+          if (!value || typeof value !== "object" || Array.isArray(value) || Object.keys(value).length === 0) {
+            return fail(res, "Enter at least one leave credit balance.");
+          }
+          const updates = {};
+          for (const [field, credit] of Object.entries(value)) {
+            if (!leaveCreditFields.has(field) ||
+                (credit !== null && (typeof credit !== "number" || !Number.isFinite(credit) || credit < 0 ||
+                  credit > 9999.99 || Math.abs(credit * 100 - Math.round(credit * 100)) >= 1e-8))) {
+              return fail(res, "Leave credits must be non-negative numbers with up to two decimals or unset.");
+            }
+            updates[field] = credit;
+          }
+          user.leaveCredits = {
+            ...(user.leaveCredits || {}),
+            ...updates,
+            updatedAt: new Date().toISOString(),
+            updatedBy: "local-demo",
+          };
+          saveState();
+          return json(res, publicUser(user));
+        }
 
         const employmentType = "employmentType" in body
           ? String(body.employmentType || "")

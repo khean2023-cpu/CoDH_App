@@ -20,6 +20,26 @@ import type {
 } from "../db/schema.js";
 import { SYSTEM_ADMIN } from "../db/seed.js";
 
+const LEAVE_CREDIT_FIELDS = [
+  "vacation",
+  "sick",
+  "mandatoryForced",
+  "maternity",
+  "paternity",
+  "specialPrivilege",
+  "soloParent",
+  "study",
+  "vawc",
+  "rehabilitation",
+  "specialLeaveForWomen",
+  "specialEmergency",
+  "adoption",
+  "wellness",
+] as const;
+type LeaveCreditField = typeof LEAVE_CREDIT_FIELDS[number];
+const isLeaveCreditField = (field: string): field is LeaveCreditField =>
+  LEAVE_CREDIT_FIELDS.includes(field as LeaveCreditField);
+
 // --- password helpers ---
 const hashPassword = (password: string) => {
   const salt = randomBytes(16).toString("hex");
@@ -707,19 +727,24 @@ export const handleApi = async (req: Request, apiPath?: string) => {
           }
           const value = body.leaveCredits;
           if (!value || typeof value !== "object" || Array.isArray(value)) {
-            return error("Enter valid vacation and sick leave credits.");
+            return error("Enter valid leave credits.");
           }
           const creditValues = value as Record<string, unknown>;
-          const vacation = creditValues.vacation;
-          const sick = creditValues.sick;
           const isValidCredit = (credit: unknown): credit is number =>
             typeof credit === "number" &&
             Number.isFinite(credit) &&
             credit >= 0 &&
             credit <= 9999.99 &&
             Math.abs(credit * 100 - Math.round(credit * 100)) < 1e-8;
-          if (!isValidCredit(vacation) || !isValidCredit(sick)) {
-            return error("Leave credits must be non-negative numbers with up to two decimal places.");
+          if (Object.keys(creditValues).length === 0) {
+            return error("Enter at least one leave credit balance.");
+          }
+          const leaveCreditUpdates: Partial<Record<LeaveCreditField, number | null>> = {};
+          for (const [field, credit] of Object.entries(creditValues)) {
+            if (!isLeaveCreditField(field) || (credit !== null && !isValidCredit(credit))) {
+              return error("Leave credits must be non-negative numbers with up to two decimals or unset.");
+            }
+            leaveCreditUpdates[field] = credit;
           }
 
           await users.updateOne(
@@ -727,8 +752,8 @@ export const handleApi = async (req: Request, apiPath?: string) => {
             {
               $set: {
                 leaveCredits: {
-                  vacation,
-                  sick,
+                  ...(user.leaveCredits || {}),
+                  ...leaveCreditUpdates,
                   updatedAt: new Date().toISOString(),
                   updatedBy: actor.id,
                 },
