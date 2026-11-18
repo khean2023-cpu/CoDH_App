@@ -40,6 +40,12 @@ export interface UserDocument {
     previousSalary: string | null;
     newSalary: string;
   }[];
+  leaveCredits?: {
+    vacation: number;
+    sick: number;
+    updatedAt: string;
+    updatedBy: string;
+  } | null;
   avatar?: string | null;
   signature?: string | null;
   passwordHash: string;
