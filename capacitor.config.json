@@ -3,7 +3,10 @@
   "appName": "CoDH App",
   "webDir": "dist",
   "server": {
-    "url": "https://khean2023-git-main-co-dh.vercel.app/?codh-native=1",
+    "url": "https://corondistrict.vercel.app/?codh-native=1",
+    "allowNavigation": [
+      "corondistrict.vercel.app"
+    ],
     "cleartext": false
   }
 }
