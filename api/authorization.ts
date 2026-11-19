@@ -17,6 +17,9 @@ export const isHumanResourceReviewer = (user: UserDocument, users: UserDocument[
     (!hasHumanResourceDepartmentHead && user.role === "Human Resource");
 };
 
+const isDepartmentHeadApplicant = (request: RequestDocument, users: UserDocument[]) =>
+  users.some(candidate => candidate.id === request.applicantId && candidate.role === "Department Head");
+
 export const canAccessRequest = (
   user: UserDocument,
   request: RequestDocument,
@@ -93,8 +96,8 @@ export const getApprovalRole = (
   if (
     user.role === "Administrative Officer V" &&
     request.status === "Pending Administrative Officer V Approval" &&
-    request.deptHeadApproval === "Approved" &&
-    request.hrApproval === "Approved" &&
+    ["Approved", "Not required"].includes(request.deptHeadApproval || "") &&
+    ["Approved", "Not required"].includes(request.hrApproval || "") &&
     request.finalApproval === "Pending"
   ) return "Administrative Officer V";
   if (
@@ -133,7 +136,15 @@ export const createApprovalUpdate = (
   };
 
   if (role === "Covering Employee") {
-    if (!isReject && nextStatus !== "Pending Dept Head Approval") return null;
+    const departmentHeadApplicant = isDepartmentHeadApplicant(request, users);
+    const expectedStatus = departmentHeadApplicant
+      ? "Pending Human Resource Verification"
+      : "Pending Dept Head Approval";
+    if (!isReject && nextStatus !== expectedStatus) return null;
+    if (!isReject && departmentHeadApplicant) {
+      update.deptHeadApproval = "Not required";
+      update.hrApproval = "Pending";
+    }
   } else if (role === "Department Head") {
     if (!isReject && nextStatus !== "Pending Human Resource Verification") return null;
     update.deptHeadApproval = isReject ? "Rejected" : "Approved";

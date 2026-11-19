@@ -84,6 +84,17 @@ const SYSTEM_ADMIN_PASSWORD_REQUIRED =
   "Set the SYSTEM_ADMIN_PASSWORD environment variable before the first API request.";
 const SESSION_COOKIE = "codh_session";
 const SESSION_MAX_AGE_SECONDS = 7 * 24 * 60 * 60;
+type PseiQuote = {
+  symbol: string;
+  currency: string;
+  price: number;
+  change: number;
+  changePercent: number;
+  dayHigh: number | null;
+  dayLow: number | null;
+  quoteTime: number | null;
+};
+let pseiQuoteCache: { expiresAt: number; quote: PseiQuote } | null = null;
 const VALID_USER_ROLES = new Set<string>([
   "Admin",
   "Employee",
@@ -319,6 +330,70 @@ const isJpeg = (bytes: Uint8Array) => bytes[0] === 0xff && bytes[1] === 0xd8 && 
 
 export const handleApi = async (req: Request, apiPath?: string) => {
   try {
+    const url = new URL(req.url);
+    const parts = (apiPath ?? url.pathname).replace(/^\/api\/?/, "").split("/").filter(Boolean).map(decodeURIComponent);
+    const [resource, id] = parts;
+
+    if (resource === "market" && id === "psei" && req.method === "GET") {
+      if (pseiQuoteCache && pseiQuoteCache.expiresAt > Date.now()) {
+        return json(pseiQuoteCache.quote);
+      }
+
+      try {
+        const response = await fetch(
+          "https://query1.finance.yahoo.com/v8/finance/chart/PSEI.PS?range=1d&interval=1m",
+          {
+            headers: { Accept: "application/json", "User-Agent": "Mozilla/5.0" },
+            signal: AbortSignal.timeout(8000),
+          },
+        );
+        if (!response.ok) return error("The PSEi quote provider is temporarily unavailable.", 502);
+
+        const payload = await response.json() as {
+          chart?: {
+            result?: Array<{
+              meta?: {
+                currency?: string;
+                regularMarketPrice?: number;
+                regularMarketChangePercent?: number;
+                previousClose?: number;
+                regularMarketDayHigh?: number;
+                regularMarketDayLow?: number;
+                regularMarketTime?: number;
+              };
+            }>;
+          };
+        };
+        const meta = payload.chart?.result?.[0]?.meta;
+        const price = meta?.regularMarketPrice;
+        const changePercent = meta?.regularMarketChangePercent;
+        const previousClose = meta?.previousClose;
+        if (
+          !meta ||
+          typeof price !== "number" || !Number.isFinite(price) ||
+          typeof changePercent !== "number" || !Number.isFinite(changePercent) ||
+          typeof previousClose !== "number" || !Number.isFinite(previousClose)
+        ) {
+          return error("The PSEi quote provider returned invalid market data.", 502);
+        }
+
+        const quote: PseiQuote = {
+          symbol: "PSEI.PS",
+          currency: meta?.currency || "PHP",
+          price,
+          change: price - previousClose,
+          changePercent,
+          dayHigh: typeof meta.regularMarketDayHigh === "number" ? meta.regularMarketDayHigh : null,
+          dayLow: typeof meta.regularMarketDayLow === "number" ? meta.regularMarketDayLow : null,
+          quoteTime: typeof meta.regularMarketTime === "number" ? meta.regularMarketTime * 1000 : null,
+        };
+        pseiQuoteCache = { expiresAt: Date.now() + 60_000, quote };
+        return json(quote);
+      } catch {
+        return error("Unable to retrieve the latest PSEi quote. Please try again later.", 502);
+      }
+    }
+
     await ensureSeeded();
     const db = await getDatabase();
     const users = db.collection<UserDocument>("users");
@@ -330,9 +405,7 @@ export const handleApi = async (req: Request, apiPath?: string) => {
     const spaceInvadersScores = db.collection<SpaceInvadersScoreDocument>("spaceInvadersScores");
     const sessions = db.collection<SessionDocument>("sessions");
 
-    const url = new URL(req.url);
-    const parts = (apiPath ?? url.pathname).replace(/^\/api\/?/, "").split("/").filter(Boolean).map(decodeURIComponent);
-    const [resource, id, action] = parts;
+    const [, , action] = parts;
     const method = req.method;
 
     if (["POST", "PUT", "PATCH", "DELETE"].includes(method)) {
@@ -589,6 +662,33 @@ export const handleApi = async (req: Request, apiPath?: string) => {
         notifications.find().sort({ createdAt: -1 }).toArray(),
         archives.find().sort({ createdAt: -1 }).toArray(),
       ]);
+      const departmentHeadApplicantIds = new Set(
+        u.filter(user => user.role === "Department Head").map(user => user.id),
+      );
+      for (const request of r) {
+        if (
+          departmentHeadApplicantIds.has(request.applicantId) &&
+          request.status === "Pending Administrative Officer V Approval" &&
+          request.deptHeadApproval === "Not required" &&
+          request.hrApproval === "Not required" &&
+          request.finalApproval === "Pending"
+        ) {
+          const result = await requests.updateOne(
+            {
+              id: request.id,
+              status: "Pending Administrative Officer V Approval",
+              deptHeadApproval: "Not required",
+              hrApproval: "Not required",
+              finalApproval: "Pending",
+            },
+            { $set: { status: "Pending Human Resource Verification", hrApproval: "Pending" } },
+          );
+          if (result.matchedCount) {
+            request.status = "Pending Human Resource Verification";
+            request.hrApproval = "Pending";
+          }
+        }
+      }
       const humanResourceDepartmentHeads = u.filter(user =>
         user.role === "Department Head" &&
         (user.headOfDept || user.dept) === "Human Resource Department" &&
@@ -900,13 +1000,15 @@ export const handleApi = async (req: Request, apiPath?: string) => {
           dateFiled: new Date().toLocaleString(),
           status: values.type === "Exchange of Duty"
             ? "Pending Duty Swap Approval"
-            : "Pending Dept Head Approval",
+            : actor.role === "Department Head"
+              ? "Pending Human Resource Verification"
+              : "Pending Dept Head Approval",
           hrApproval: "Pending",
           applicantId: actor.id,
           applicantName: actor.name,
           section: actor.dept,
           taggedUsers,
-          deptHeadApproval: "Pending",
+          deptHeadApproval: actor.role === "Department Head" ? "Not required" : "Pending",
           finalApproval: "Pending",
           approvedBy: null,
           approvalDate: null,
