@@ -1223,7 +1223,7 @@
       { key: 'study', label: 'Study Leave', icon: 'file-text' },
       { key: 'vawc', label: '10-Day VAWC Leave', icon: 'shield-check' },
       { key: 'rehabilitation', label: 'Rehabilitation Privilege', icon: 'award' },
-      { key: 'specialWomen', label: 'Special Leave Benefits for Women', icon: 'shield-check' },
+      { key: 'specialLeaveForWomen', label: 'Special Leave Benefits for Women', icon: 'shield-check' },
       { key: 'specialEmergency', label: 'Special Emergency (Calamity) Leave', icon: 'alert-circle' },
       { key: 'adoption', label: 'Adoption Leave', icon: 'user-check' },
       { key: 'wellness', label: 'Wellness Leave', icon: 'sun' }
@@ -1242,6 +1242,7 @@
       'Special Leave Benefits for Women',
       'Special Emergency (Calamity) Leave',
       'Adoption Leave',
+      'Wellness Leave',
       'Others'
     ];
     const COS_LEAVE_TYPES = [
@@ -1420,7 +1421,11 @@
       const [leaveCreditEmployeeFilter, setLeaveCreditEmployeeFilter] = useState('');
       const [isRoleSimulationOpen, setIsRoleSimulationOpen] = useState(false);
 
-      const [activeTab, setActiveTab] = useState(savedSession?.activeTab === 'approvals' ? 'archives' : savedSession?.activeTab || 'dashboard');
+      const [activeTab, setActiveTab] = useState(
+        savedSession?.activeTab === 'approvals' || savedSession?.activeTab === 'leave-credits'
+          ? 'archives'
+          : savedSession?.activeTab || 'dashboard'
+      );
       const [salaryPortalReturnTab, setSalaryPortalReturnTab] = useState('dashboard');
       const [selectedRequestForModal, setSelectedRequestForModal] = useState(null);
       const [editingRequest, setEditingRequest] = useState(null);

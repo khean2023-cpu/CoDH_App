@@ -20,7 +20,7 @@ const leaveCreditKeys = [
   "study",
   "vawc",
   "rehabilitation",
-  "specialWomen",
+  "specialLeaveForWomen",
   "specialEmergency",
   "adoption",
   "wellness",
@@ -62,6 +62,13 @@ state.spaceInvadersScores ||= [];
 const saveState = () => writeFileSync(dataFile, JSON.stringify(state, null, 2));
 let migratedState = false;
 for (const user of state.users) {
+  if (user.leaveCredits && Object.prototype.hasOwnProperty.call(user.leaveCredits, "specialWomen")) {
+    if (!Object.prototype.hasOwnProperty.call(user.leaveCredits, "specialLeaveForWomen")) {
+      user.leaveCredits.specialLeaveForWomen = user.leaveCredits.specialWomen;
+    }
+    delete user.leaveCredits.specialWomen;
+    migratedState = true;
+  }
   if (!user.employmentType) {
     user.employmentType = "Contract of Service";
     migratedState = true;
@@ -379,7 +386,6 @@ const server = createServer(async (req, res) => {
         const body = JSON.parse((await readBody(req)).toString("utf8") || "{}");
         const user = state.users.find(item => item.id === id);
         if (!user) return fail(res, "User not found.", 404);
-
         if ("leaveCredits" in body) {
           if (Object.keys(body).length !== 1) {
             return fail(res, "Leave credits must be updated separately from other account fields.");

@@ -64,7 +64,7 @@ export const LEAVE_CREDIT_KEYS = [
   "study",
   "vawc",
   "rehabilitation",
-  "specialWomen",
+  "specialLeaveForWomen",
   "specialEmergency",
   "adoption",
   "wellness",
