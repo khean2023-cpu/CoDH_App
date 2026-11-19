@@ -13,6 +13,9 @@ Open [http://127.0.0.1:4173](http://127.0.0.1:4173) and sign in with:
 - Email: `admin@codh.local`
 - Password: `123456`
 
+- Email: 'kheanlisondrafinal@gmail.com'
+- Temporary password: DoPgZoq6OchsDKG3HUdzxFGi
+
 The local demo also includes a Human Resource reviewer:
 
 - Email: `hr@hospital.gov`
@@ -65,6 +68,17 @@ signature sections. PDF output is constrained to one page.
 The local demo API runs only on this computer and saves its data in
 `local-demo-data.json`; uploads are stored in `local-demo-blobs/`. Both paths are
 ignored by Git.
+
+## Offline access
+
+While signed in, the app saves a device-local copy of the account's authorized
+users, requests, notifications, and archives in IndexedDB. If the API becomes
+unavailable, a previously signed-in account can view this saved data in
+read-only mode; the app refreshes the copy when it reconnects. Attachments and
+profile photos/signatures and the external salary portal are not available
+offline. Logging out removes the saved data for that account from the device.
+Protect devices that contain cached employee information, and clear the
+browser or app data when retiring a device.
 
 ## Deploy from GitHub to Vercel
 

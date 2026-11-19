@@ -40,30 +40,37 @@ export interface UserDocument {
     previousSalary: string | null;
     newSalary: string;
   }[];
-  leaveCredits?: {
-    vacation?: number | null;
-    sick?: number | null;
-    mandatoryForced?: number | null;
-    maternity?: number | null;
-    paternity?: number | null;
-    specialPrivilege?: number | null;
-    soloParent?: number | null;
-    study?: number | null;
-    vawc?: number | null;
-    rehabilitation?: number | null;
-    specialLeaveForWomen?: number | null;
-    specialEmergency?: number | null;
-    adoption?: number | null;
-    wellness?: number | null;
-    updatedAt: string;
-    updatedBy: string;
-  } | null;
+  leaveCredits?: (
+    Partial<Record<LeaveCreditKey, number | null>> & {
+      updatedAt: string;
+      updatedBy: string;
+    }
+  ) | null;
   avatar?: string | null;
   signature?: string | null;
   passwordHash: string;
   status: string;
   createdAt: Date;
 }
+
+export const LEAVE_CREDIT_KEYS = [
+  "vacation",
+  "sick",
+  "mandatoryForced",
+  "maternity",
+  "paternity",
+  "specialPrivilege",
+  "soloParent",
+  "study",
+  "vawc",
+  "rehabilitation",
+  "specialLeaveForWomen",
+  "specialEmergency",
+  "adoption",
+  "wellness",
+] as const;
+
+export type LeaveCreditKey = typeof LEAVE_CREDIT_KEYS[number];
 
 export interface RequestDocument {
   id: string;

@@ -8,9 +8,11 @@ import {
   createApprovalUpdate,
   isHumanResourceReviewer,
 } from "./authorization.js";
+import { LEAVE_CREDIT_KEYS } from "../db/schema.js";
 import type {
   ArchiveDocument,
   AttachmentDocument,
+  LeaveCreditKey,
   NotificationDocument,
   ProfileMediaDocument,
   RequestDocument,
@@ -19,26 +21,6 @@ import type {
   UserDocument,
 } from "../db/schema.js";
 import { SYSTEM_ADMIN } from "../db/seed.js";
-
-const LEAVE_CREDIT_FIELDS = [
-  "vacation",
-  "sick",
-  "mandatoryForced",
-  "maternity",
-  "paternity",
-  "specialPrivilege",
-  "soloParent",
-  "study",
-  "vawc",
-  "rehabilitation",
-  "specialLeaveForWomen",
-  "specialEmergency",
-  "adoption",
-  "wellness",
-] as const;
-type LeaveCreditField = typeof LEAVE_CREDIT_FIELDS[number];
-const isLeaveCreditField = (field: string): field is LeaveCreditField =>
-  LEAVE_CREDIT_FIELDS.includes(field as LeaveCreditField);
 
 // --- password helpers ---
 const hashPassword = (password: string) => {
@@ -68,13 +50,19 @@ const publicUser = (user: UserDocument, viewer?: UserDocument) => {
     requestedEmploymentType,
     ...rest
   } = user;
-  const safeLeaveCredits = leaveCredits ? { leaveCredits } : {};
+  const canViewLeaveCredits =
+    (viewer?.id === user.id &&
+      user.role === "Employee" &&
+      user.status === "Approved" &&
+      user.employmentType === "Permanent") ||
+    (viewer !== undefined && canManageLeaveCredits(viewer));
+  const safeLeaveCredits = canViewLeaveCredits && leaveCredits ? { leaveCredits } : {};
   if (viewer && (viewer.role === "Admin" || viewer.id === user.id)) {
     return {
       ...rest,
       salary,
       salaryHistory,
-      ...safeLeaveCredits,
+      ...(viewer.role === "Admin" ? {} : safeLeaveCredits),
       signature,
       requestedRole,
       requestedDept,
@@ -108,6 +96,23 @@ const VALID_REGISTRATION_ROLES = new Set([...VALID_USER_ROLES].filter(role => ro
 const VALID_EMPLOYMENT_TYPES = new Set(["Contract of Service", "Permanent"]);
 const VALID_USER_STATUSES = new Set<string>(["Pending", "Approved", "Deactivated"]);
 const sessionHash = (token: string) => createHash("sha256").update(token).digest("hex");
+const isValidLeaveCredit = (credit: unknown): credit is number =>
+  typeof credit === "number" &&
+  Number.isFinite(credit) &&
+  credit >= 0 &&
+  credit <= 9999.99 &&
+  Math.abs(credit * 100 - Math.round(credit * 100)) < 1e-8;
+const isValidLeaveCreditRecord = (
+  value: unknown,
+): value is Partial<Record<LeaveCreditKey, number | null>> => {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return false;
+  const credits = value as Record<string, unknown>;
+  const keys = Object.keys(credits);
+  return keys.length > 0 && keys.every(key =>
+    LEAVE_CREDIT_KEYS.some(creditKey => creditKey === key) &&
+    (credits[key] === null || isValidLeaveCredit(credits[key]))
+  );
+};
 
 const requestSessionToken = (req: Request) => {
   const cookies = req.headers.get("cookie");
@@ -720,31 +725,23 @@ export const handleApi = async (req: Request, apiPath?: string) => {
             return error("Leave credits must be updated separately from other account fields.");
           }
           if (!canManageLeaveCredits(actor)) {
-            return error("Only Human Resource or an administrator can update leave credits.", 403);
+            return error("Only an approved Human Resource account can update leave credits.", 403);
           }
           if (user.role !== "Employee" || user.status !== "Approved" || user.employmentType !== "Permanent") {
-            return error("Leave credits can only be assigned to approved permanent employee accounts.");
+            return error("Leave credits can only be assigned to approved Permanent employee accounts.");
           }
           const value = body.leaveCredits;
           if (!value || typeof value !== "object" || Array.isArray(value)) {
-            return error("Enter valid leave credits.");
+            return error("Enter valid leave credits for all categories.");
           }
-          const creditValues = value as Record<string, unknown>;
-          const isValidCredit = (credit: unknown): credit is number =>
-            typeof credit === "number" &&
-            Number.isFinite(credit) &&
-            credit >= 0 &&
-            credit <= 9999.99 &&
-            Math.abs(credit * 100 - Math.round(credit * 100)) < 1e-8;
-          if (Object.keys(creditValues).length === 0) {
-            return error("Enter at least one leave credit balance.");
+          if (!isValidLeaveCreditRecord(value)) {
+            return error("Each leave balance must be blank or a non-negative number with up to two decimal places.");
           }
-          const leaveCreditUpdates: Partial<Record<LeaveCreditField, number | null>> = {};
-          for (const [field, credit] of Object.entries(creditValues)) {
-            if (!isLeaveCreditField(field) || (credit !== null && !isValidCredit(credit))) {
-              return error("Leave credits must be non-negative numbers with up to two decimals or unset.");
-            }
-            leaveCreditUpdates[field] = credit;
+          const leaveCredits: Partial<Record<LeaveCreditKey, number | null>> = {};
+          for (const key of LEAVE_CREDIT_KEYS) {
+            leaveCredits[key] = Object.prototype.hasOwnProperty.call(value, key)
+              ? value[key] ?? null
+              : user.leaveCredits?.[key] ?? null;
           }
 
           await users.updateOne(
@@ -752,8 +749,7 @@ export const handleApi = async (req: Request, apiPath?: string) => {
             {
               $set: {
                 leaveCredits: {
-                  ...(user.leaveCredits || {}),
-                  ...leaveCreditUpdates,
+                  ...leaveCredits,
                   updatedAt: new Date().toISOString(),
                   updatedBy: actor.id,
                 },
@@ -923,12 +919,41 @@ export const handleApi = async (req: Request, apiPath?: string) => {
           type: values.type,
           createdAt: new Date(),
         };
+        const archiveCopy: ArchiveDocument = {
+          id: `ARCH-${Date.now()}-${randomBytes(3).toString("hex")}`,
+          originalReqId: created.id,
+          applicantId: actor.id,
+          recipientId: actor.id,
+          applicantName: created.applicantName,
+          type: created.type,
+          section: created.section,
+          status: created.status,
+          archivedDate: created.dateFiled || "",
+          reason: created.reason,
+          createdAt: new Date(),
+        };
         await requests.insertOne(created);
-        if (created.attachmentId) {
-          await attachments.updateOne({ id: created.attachmentId }, { $set: { requestId: created.id } });
+        try {
+          await archives.insertOne(archiveCopy);
+          if (created.attachmentId) {
+            await attachments.updateOne({ id: created.attachmentId }, { $set: { requestId: created.id } });
+          }
+        } catch (err) {
+          const rollbacks = await Promise.allSettled([
+            requests.deleteOne({ id: created.id }),
+            archives.deleteOne({ id: archiveCopy.id }),
+            ...(created.attachmentId
+              ? [attachments.updateOne({ id: created.attachmentId }, { $set: { requestId: null } })]
+              : []),
+          ]);
+          if (rollbacks.some(result => result.status === "rejected")) {
+            console.error("Could not fully roll back request creation after archive-copy failure.", rollbacks);
+          }
+          throw err;
         }
-        const { createdAt, ...rest } = created;
-        return json(rest, 201);
+        const { createdAt: requestCreatedAt, ...requestResponse } = created;
+        const { createdAt: archiveCreatedAt, ...archiveResponse } = archiveCopy;
+        return json({ request: requestResponse, archiveCopy: archiveResponse }, 201);
       }
 
       if (id && method === "PUT") {
@@ -1048,21 +1073,27 @@ export const handleApi = async (req: Request, apiPath?: string) => {
         originalReqId: request.id,
         recipientId: String(recipientId),
       });
-      if (existing) {
-        const { createdAt, ...rest } = existing;
-        return json(rest);
-      }
-      const created: ArchiveDocument = {
-        id: `ARCH-${Date.now()}-${randomBytes(3).toString("hex")}`,
-        originalReqId: request.id,
+      const archiveFields = {
         applicantId: request.applicantId,
         recipientId: String(recipientId),
         applicantName: request.applicantName,
         type: request.type,
         section: request.section,
         status: request.status,
-        archivedDate: String(archivedDate || request.approvalDate || request.dateFiled || ""),
+        archivedDate: String(request.approvalDate || archivedDate || request.dateFiled || ""),
         reason: request.reason,
+      };
+      if (existing) {
+        await archives.updateOne({ id: existing.id }, { $set: archiveFields });
+        const updated = await archives.findOne({ id: existing.id });
+        if (!updated) return error("The archive copy could not be updated.", 500);
+        const { createdAt, ...rest } = updated;
+        return json(rest);
+      }
+      const created: ArchiveDocument = {
+        id: `ARCH-${Date.now()}-${randomBytes(3).toString("hex")}`,
+        originalReqId: request.id,
+        ...archiveFields,
         createdAt: new Date(),
       };
       await archives.insertOne(created);

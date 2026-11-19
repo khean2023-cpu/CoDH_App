@@ -9,6 +9,35 @@ const dataFile = resolve(root, "local-demo-data.json");
 const maxUploadBytes = 4 * 1024 * 1024;
 const pngSignature = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
 const isJpeg = bytes => bytes[0] === 0xff && bytes[1] === 0xd8 && bytes[2] === 0xff;
+const leaveCreditKeys = [
+  "vacation",
+  "sick",
+  "mandatoryForced",
+  "maternity",
+  "paternity",
+  "specialPrivilege",
+  "soloParent",
+  "study",
+  "vawc",
+  "rehabilitation",
+  "specialLeaveForWomen",
+  "specialEmergency",
+  "adoption",
+  "wellness",
+];
+const isValidLeaveCreditRecord = value => {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return false;
+  const entries = Object.entries(value);
+  return entries.length > 0 && entries.every(([key, credit]) =>
+    leaveCreditKeys.includes(key) &&
+    (credit === null ||
+      (typeof credit === "number" &&
+        Number.isFinite(credit) &&
+        credit >= 0 &&
+        credit <= 9999.99 &&
+        Math.abs(credit * 100 - Math.round(credit * 100)) < 1e-8))
+  );
+};
 
 const initialState = () => ({
   users: [
@@ -33,6 +62,13 @@ state.spaceInvadersScores ||= [];
 const saveState = () => writeFileSync(dataFile, JSON.stringify(state, null, 2));
 let migratedState = false;
 for (const user of state.users) {
+  if (user.leaveCredits && Object.prototype.hasOwnProperty.call(user.leaveCredits, "specialWomen")) {
+    if (!Object.prototype.hasOwnProperty.call(user.leaveCredits, "specialLeaveForWomen")) {
+      user.leaveCredits.specialLeaveForWomen = user.leaveCredits.specialWomen;
+    }
+    delete user.leaveCredits.specialWomen;
+    migratedState = true;
+  }
   if (!user.employmentType) {
     user.employmentType = "Contract of Service";
     migratedState = true;
@@ -78,22 +114,6 @@ const json = (res, body, status = 200) => {
 };
 const fail = (res, message, status = 400) => json(res, { error: message }, status);
 const publicUser = ({ password, ...user }) => user;
-const leaveCreditFields = new Set([
-  "vacation",
-  "sick",
-  "mandatoryForced",
-  "maternity",
-  "paternity",
-  "specialPrivilege",
-  "soloParent",
-  "study",
-  "vawc",
-  "rehabilitation",
-  "specialLeaveForWomen",
-  "specialEmergency",
-  "adoption",
-  "wellness",
-]);
 const readBody = (req, limit = 1024 * 1024) => new Promise((resolveBody, reject) => {
   const chunks = [];
   let length = 0;
@@ -367,26 +387,24 @@ const server = createServer(async (req, res) => {
         const user = state.users.find(item => item.id === id);
         if (!user) return fail(res, "User not found.", 404);
         if ("leaveCredits" in body) {
-          if (Object.keys(body).length !== 1) return fail(res, "Leave credits must be updated separately from other account fields.");
+          if (Object.keys(body).length !== 1) {
+            return fail(res, "Leave credits must be updated separately from other account fields.");
+          }
           if (user.role !== "Employee" || user.status !== "Approved" || user.employmentType !== "Permanent") {
-            return fail(res, "Leave credits can only be assigned to approved permanent employee accounts.");
+            return fail(res, "Leave credits can only be assigned to approved Permanent employee accounts.");
           }
           const value = body.leaveCredits;
-          if (!value || typeof value !== "object" || Array.isArray(value) || Object.keys(value).length === 0) {
-            return fail(res, "Enter at least one leave credit balance.");
+          if (!isValidLeaveCreditRecord(value)) {
+            return fail(res, "Each leave balance must be blank or a non-negative number with up to two decimal places.");
           }
-          const updates = {};
-          for (const [field, credit] of Object.entries(value)) {
-            if (!leaveCreditFields.has(field) ||
-                (credit !== null && (typeof credit !== "number" || !Number.isFinite(credit) || credit < 0 ||
-                  credit > 9999.99 || Math.abs(credit * 100 - Math.round(credit * 100)) >= 1e-8))) {
-              return fail(res, "Leave credits must be non-negative numbers with up to two decimals or unset.");
-            }
-            updates[field] = credit;
-          }
+          const leaveCredits = Object.fromEntries(leaveCreditKeys.map(key => [
+            key,
+            Object.prototype.hasOwnProperty.call(value, key)
+              ? value[key]
+              : user.leaveCredits?.[key] ?? null,
+          ]));
           user.leaveCredits = {
-            ...(user.leaveCredits || {}),
-            ...updates,
+            ...leaveCredits,
             updatedAt: new Date().toISOString(),
             updatedBy: "local-demo",
           };
@@ -476,9 +494,22 @@ const server = createServer(async (req, res) => {
           hrApproval: body.hrApproval || "Pending",
           id: `REQ-${new Date().getFullYear()}-${Date.now()}`,
         };
+        const archiveCopy = {
+          id: `ARCH-${Date.now()}-${randomBytes(3).toString("hex")}`,
+          originalReqId: created.id,
+          applicantId: created.applicantId,
+          recipientId: created.applicantId,
+          applicantName: created.applicantName,
+          type: created.type,
+          section: created.section,
+          status: created.status,
+          archivedDate: created.dateFiled || new Date().toLocaleString(),
+          reason: created.reason,
+        };
         state.requests.unshift(created);
+        state.archives.unshift(archiveCopy);
         saveState();
-        return json(res, created, 201);
+        return json(res, { request: created, archiveCopy }, 201);
       }
 
       if (resource === "requests" && id && req.method === "PUT") {
@@ -510,8 +541,32 @@ const server = createServer(async (req, res) => {
 
       if (resource === "archives" && req.method === "POST" && !id) {
         const body = JSON.parse((await readBody(req)).toString("utf8") || "{}");
-        if (!body.originalReqId || !body.applicantId) return fail(res, "Missing archive fields.");
-        const created = { ...body, id: `ARCH-${Date.now()}` };
+        if (!body.originalReqId || !body.applicantId || !body.recipientId) return fail(res, "Missing archive fields.");
+        const request = state.requests.find(item => item.id === body.originalReqId);
+        if (!request) return fail(res, "Request not found.", 404);
+        if (!["Approved", "Rejected"].includes(request.status)) return fail(res, "Only completed requests can be archived.", 403);
+        if (request.applicantId !== body.applicantId) return fail(res, "Request applicant does not match.", 403);
+        const archiveFields = {
+          originalReqId: request.id,
+          applicantId: request.applicantId,
+          recipientId: String(body.recipientId),
+          applicantName: request.applicantName,
+          type: request.type,
+          section: request.section,
+          status: request.status,
+          archivedDate: request.approvalDate || body.archivedDate || request.dateFiled || "",
+          reason: request.reason,
+        };
+        const existing = state.archives.find(archive =>
+          archive.originalReqId === request.id &&
+          archive.recipientId === String(body.recipientId)
+        );
+        if (existing) {
+          Object.assign(existing, archiveFields);
+          saveState();
+          return json(res, existing);
+        }
+        const created = { ...archiveFields, id: `ARCH-${Date.now()}-${randomBytes(3).toString("hex")}` };
         state.archives.unshift(created);
         saveState();
         return json(res, created, 201);

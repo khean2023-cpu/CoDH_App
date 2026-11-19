@@ -1,0 +1,10 @@
+.git
+.vercel
+node_modules
+dist
+android
+README.md
+local-demo-server.js
+local-demo-data.json
+local-demo-blobs
+.env*

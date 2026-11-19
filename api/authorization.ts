@@ -7,8 +7,7 @@ const isHumanResourceDepartmentHead = (user: UserDocument) =>
   (user.headOfDept || user.dept) === "Human Resource Department";
 
 export const canManageLeaveCredits = (user: UserDocument) =>
-  isApproved(user) &&
-  (user.role === "Human Resource" || isHumanResourceDepartmentHead(user));
+  user.status === "Approved" && user.role === "Human Resource";
 
 export const isHumanResourceReviewer = (user: UserDocument, users: UserDocument[]) => {
   const hasHumanResourceDepartmentHead = users.some(candidate =>
