@@ -95,8 +95,21 @@ if (!state.users.some(user => user.role === "Human Resource")) {
   });
   migratedState = true;
 }
+const departmentHeadApplicantIds = new Set(
+  state.users.filter(user => user.role === "Department Head").map(user => user.id),
+);
 for (const request of state.requests) {
-  if (["Pending Administrative Officer V Approval", "Pending Chief of Hospital Approval"].includes(request.status) &&
+  if (
+    departmentHeadApplicantIds.has(request.applicantId) &&
+    request.status === "Pending Administrative Officer V Approval" &&
+    request.deptHeadApproval === "Not required" &&
+    request.hrApproval === "Not required" &&
+    request.finalApproval === "Pending"
+  ) {
+    request.status = "Pending Human Resource Verification";
+    request.hrApproval = "Pending";
+    migratedState = true;
+  } else if (["Pending Administrative Officer V Approval", "Pending Chief of Hospital Approval"].includes(request.status) &&
       request.deptHeadApproval === "Approved") {
     request.status = "Pending Human Resource Verification";
     request.hrApproval = "Pending";
@@ -114,6 +127,7 @@ const json = (res, body, status = 200) => {
 };
 const fail = (res, message, status = 400) => json(res, { error: message }, status);
 const publicUser = ({ password, ...user }) => user;
+let pseiQuoteCache = null;
 const readBody = (req, limit = 1024 * 1024) => new Promise((resolveBody, reject) => {
   const chunks = [];
   let length = 0;
@@ -136,6 +150,50 @@ const server = createServer(async (req, res) => {
     const parts = url.pathname.split("/").filter(Boolean).map(decodeURIComponent);
     if (parts[0] === "api") {
       const [, resource, id, action] = parts;
+
+      if (resource === "market" && id === "psei" && req.method === "GET") {
+        if (pseiQuoteCache && pseiQuoteCache.expiresAt > Date.now()) {
+          return json(res, pseiQuoteCache.quote);
+        }
+
+        try {
+          const response = await fetch(
+            "https://query1.finance.yahoo.com/v8/finance/chart/PSEI.PS?range=1d&interval=1m",
+            {
+              headers: { Accept: "application/json", "User-Agent": "Mozilla/5.0" },
+              signal: AbortSignal.timeout(8000),
+            },
+          );
+          if (!response.ok) return fail(res, "The PSEi quote provider is temporarily unavailable.", 502);
+          const payload = await response.json();
+          const meta = payload.chart?.result?.[0]?.meta;
+          const price = meta?.regularMarketPrice;
+          const changePercent = meta?.regularMarketChangePercent;
+          const previousClose = meta?.previousClose;
+          if (
+            typeof price !== "number" || !Number.isFinite(price) ||
+            typeof changePercent !== "number" || !Number.isFinite(changePercent) ||
+            typeof previousClose !== "number" || !Number.isFinite(previousClose)
+          ) {
+            return fail(res, "The PSEi quote provider returned invalid market data.", 502);
+          }
+
+          const quote = {
+            symbol: "PSEI.PS",
+            currency: meta.currency || "PHP",
+            price,
+            change: price - previousClose,
+            changePercent,
+            dayHigh: typeof meta.regularMarketDayHigh === "number" ? meta.regularMarketDayHigh : null,
+            dayLow: typeof meta.regularMarketDayLow === "number" ? meta.regularMarketDayLow : null,
+            quoteTime: typeof meta.regularMarketTime === "number" ? meta.regularMarketTime * 1000 : null,
+          };
+          pseiQuoteCache = { expiresAt: Date.now() + 60_000, quote };
+          return json(res, quote);
+        } catch {
+          return fail(res, "Unable to retrieve the latest PSEi quote. Please try again later.", 502);
+        }
+      }
 
       if (resource === "profile-media" && req.method === "POST" && id && ["avatar", "signature"].includes(action)) {
         const user = state.users.find(item => item.id === id);
@@ -489,9 +547,17 @@ const server = createServer(async (req, res) => {
       if (resource === "requests" && req.method === "POST" && !id) {
         const body = JSON.parse((await readBody(req)).toString("utf8") || "{}");
         if (!body.type || !body.applicantId) return fail(res, "Missing request type or applicant.");
+        const applicant = state.users.find(user => user.id === body.applicantId);
+        const departmentHeadApplicant = applicant?.role === "Department Head";
         const created = {
           ...body,
-          hrApproval: body.hrApproval || "Pending",
+          status: body.type === "Exchange of Duty"
+            ? "Pending Duty Swap Approval"
+            : departmentHeadApplicant
+              ? "Pending Human Resource Verification"
+              : "Pending Dept Head Approval",
+          deptHeadApproval: departmentHeadApplicant ? "Not required" : "Pending",
+          hrApproval: "Pending",
           id: `REQ-${new Date().getFullYear()}-${Date.now()}`,
         };
         const archiveCopy = {

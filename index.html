@@ -67,7 +67,7 @@
     }
 
     .app-shell > main.dashboard-main {
-      overflow-y: hidden;
+      overflow-y: auto;
     }
 
     .app-shell > main.dashboard-main.leave-credits-dashboard {
@@ -674,60 +674,154 @@
       }
     }
 
-    .light-theme[class~="bg-slate-900"] { background-color: #e1e8e2 !important; }
-    .light-theme [class*="bg-slate-950"] { background-color: #e8ede9 !important; }
-    .light-theme [class*="bg-slate-900"] { background-color: #e1e8e2 !important; }
-    .light-theme [class*="bg-slate-800"] { background-color: #d7e0d9 !important; }
-    .light-theme [class*="bg-slate-700"] { background-color: #c9d4cc !important; }
+    .light-theme[class~="bg-slate-900"] {
+      background-color: #f0f4f0 !important;
+      color: #27372e;
+    }
+    .light-theme [class*="bg-slate-950"] { background-color: #f9fbf9 !important; }
+    .light-theme [class*="bg-slate-900"] { background-color: #edf2ee !important; }
+    .light-theme [class*="bg-slate-800"] { background-color: #e3eae4 !important; }
+    .light-theme [class*="bg-slate-700"] { background-color: #d4ded6 !important; }
+    .light-theme [class*="bg-slate-600"] { background-color: #c5d1c8 !important; }
+    .light-theme [class*="bg-indigo-950"],
+    .light-theme [class*="bg-violet-950"] { background-color: #e9edf5 !important; }
+    .light-theme [class*="bg-emerald-950"],
+    .light-theme [class*="bg-green-950"] { background-color: #e6f0e9 !important; }
+    .light-theme [class*="bg-rose-900"],
+    .light-theme [class*="bg-rose-950"] { background-color: #f4e9e7 !important; }
+    .light-theme [class*="bg-amber-950"] { background-color: #f5efdf !important; }
+    .light-theme [class*="bg-sky-950"],
+    .light-theme [class*="bg-cyan-950"],
+    .light-theme [class*="bg-blue-950"] { background-color: #e5f0f5 !important; }
+
+    .light-theme [class*="border-slate-900"],
     .light-theme [class*="border-slate-800"],
-    .light-theme [class*="border-slate-700"] { border-color: #c4d0c7 !important; }
+    .light-theme [class*="border-slate-700"],
+    .light-theme [class*="border-slate-600"] { border-color: #c8d3ca !important; }
+    .light-theme [class*="border-indigo-800"],
+    .light-theme [class*="border-indigo-500"],
+    .light-theme [class*="border-violet-800"],
+    .light-theme [class*="border-violet-500"] { border-color: #cbd1df !important; }
+    .light-theme [class*="border-emerald-800"],
+    .light-theme [class*="border-emerald-500"],
+    .light-theme [class*="border-green-500"] { border-color: #c5d7c9 !important; }
+    .light-theme [class*="border-cyan-500"],
+    .light-theme [class*="border-sky-500"],
+    .light-theme [class*="border-blue-500"] { border-color: #c2d7e0 !important; }
+    .light-theme [class*="border-rose-800"],
+    .light-theme [class*="border-rose-500"] { border-color: #dfc7c4 !important; }
+    .light-theme [class*="border-amber-800"],
+    .light-theme [class*="border-amber-500"] { border-color: #dfd2b3 !important; }
+    .light-theme [class*="border-white/60"] { border-color: #c8d3ca !important; }
+
+    .light-theme [class*="text-slate-50"],
     .light-theme [class*="text-slate-100"],
     .light-theme [class*="text-slate-200"],
     .light-theme [class*="text-slate-300"],
-    .light-theme [class~="text-white"] { color: #2b3a31 !important; }
-    .light-theme [class*="text-slate-400"],
-    .light-theme [class*="text-slate-500"] { color: #596a5f !important; }
+    .light-theme [class~="text-white"] { color: #27372e !important; }
+    .light-theme [class*="text-slate-400"] { color: #58695e !important; }
+    .light-theme [class*="text-slate-500"],
+    .light-theme [class*="text-slate-600"] { color: #65756a !important; }
+    .light-theme [class*="text-slate-800"],
+    .light-theme [class*="text-slate-900"] { color: #35463b !important; }
+    .light-theme [class*="text-indigo-50"],
+    .light-theme [class*="text-indigo-200"],
     .light-theme [class*="text-indigo-300"],
     .light-theme [class*="text-indigo-400"],
-    .light-theme [class*="text-indigo-500"],
+    .light-theme [class*="text-indigo-500"] { color: #4b587c !important; }
+    .light-theme [class*="text-violet-50"],
+    .light-theme [class*="text-violet-200"],
     .light-theme [class*="text-violet-300"],
-    .light-theme [class*="text-violet-400"],
-    .light-theme [class*="text-violet-500"] { color: #625c78 !important; }
+    .light-theme [class*="text-violet-400"] { color: #5b4e76 !important; }
+    .light-theme [class*="text-emerald-200"],
     .light-theme [class*="text-emerald-300"],
     .light-theme [class*="text-emerald-400"],
     .light-theme [class*="text-green-300"],
-    .light-theme [class*="text-green-400"] { color: #496d59 !important; }
+    .light-theme [class*="text-green-400"] { color: #356247 !important; }
+    .light-theme [class*="text-cyan-200"],
+    .light-theme [class*="text-cyan-300"] { color: #176276 !important; }
+    .light-theme [class*="text-sky-200"],
+    .light-theme [class*="text-sky-300"] { color: #2b5f7a !important; }
+    .light-theme [class*="text-rose-50"],
     .light-theme [class*="text-rose-300"],
-    .light-theme [class*="text-rose-400"] { color: #965b5b !important; }
+    .light-theme [class*="text-rose-400"] { color: #8d4b48 !important; }
+    .light-theme [class*="text-amber-200"],
     .light-theme [class*="text-amber-300"],
-    .light-theme [class*="text-amber-400"] { color: #806737 !important; }
-    .light-theme [class*="bg-indigo-950"],
-    .light-theme [class*="bg-violet-950"] { background-color: #dce3e9 !important; }
-    .light-theme [class*="bg-emerald-950"],
-    .light-theme [class*="bg-green-950"] { background-color: #dce6de !important; }
-    .light-theme [class*="bg-rose-950"] { background-color: #eadfdd !important; }
-    .light-theme [class*="bg-amber-950"] { background-color: #ebe5d7 !important; }
-    .light-theme [class*="border-indigo-800"],
-    .light-theme [class*="border-indigo-500"] { border-color: #c4d0d6 !important; }
-    .light-theme [class*="border-emerald-800"],
-    .light-theme [class*="border-emerald-500"],
-    .light-theme [class*="border-green-500"] { border-color: #c0d0c3 !important; }
-    .light-theme [class*="border-rose-800"],
-    .light-theme [class*="border-rose-500"] { border-color: #d9c4c0 !important; }
-    .light-theme [class*="border-amber-800"],
-    .light-theme [class*="border-amber-500"] { border-color: #d8cdb2 !important; }
-    .light-theme [class*="border-white/60"] { border-color: #c4d0c7 !important; }
+    .light-theme [class*="text-amber-400"] { color: #765724 !important; }
+    .light-theme [class*="placeholder-slate-"]::placeholder { color: #6a796f !important; opacity: 1; }
+
+    .light-theme [class*="from-slate-950"],
+    .light-theme [class*="from-slate-900"] {
+      --tw-gradient-from: #f8faf8 var(--tw-gradient-from-position) !important;
+      --tw-gradient-to: rgb(248 250 248 / 0) var(--tw-gradient-to-position) !important;
+    }
+    .light-theme [class*="via-slate-900"] { --tw-gradient-via: #edf2ee var(--tw-gradient-via-position) !important; }
+    .light-theme [class*="to-slate-950"],
+    .light-theme [class*="to-slate-900"] { --tw-gradient-to: #edf2ee var(--tw-gradient-to-position) !important; }
+    .light-theme [class*="bg-gradient-to-"][class*="from-slate-950"][class*="via-slate-900"] {
+      --tw-gradient-stops: #f8faf8, #edf2ee, #e7ebf3 !important;
+    }
+    .light-theme [class*="from-indigo-950"],
+    .light-theme [class*="from-violet-950"] {
+      --tw-gradient-from: #f0f1f8 var(--tw-gradient-from-position) !important;
+      --tw-gradient-to: rgb(240 241 248 / 0) var(--tw-gradient-to-position) !important;
+    }
+    .light-theme [class*="to-indigo-950"],
+    .light-theme [class*="to-violet-950"] { --tw-gradient-to: #e7ebf3 var(--tw-gradient-to-position) !important; }
+    .light-theme [class*="bg-gradient-to-"][class*="from-violet-950"] {
+      --tw-gradient-stops: #f0f1f8, #e7ebf3 !important;
+    }
+    .light-theme [class*="from-emerald-950"],
+    .light-theme [class*="from-green-950"] {
+      --tw-gradient-from: #edf4ee var(--tw-gradient-from-position) !important;
+      --tw-gradient-to: rgb(237 244 238 / 0) var(--tw-gradient-to-position) !important;
+    }
+    .light-theme [class*="to-emerald-950"],
+    .light-theme [class*="to-green-950"] { --tw-gradient-to: #e4eee6 var(--tw-gradient-to-position) !important; }
+    .light-theme [class*="bg-gradient-to-"][class*="from-emerald-950"] {
+      --tw-gradient-stops: #edf4ee, #e4eee6 !important;
+    }
+    .light-theme [class*="from-sky-950"],
+    .light-theme [class*="from-cyan-950"],
+    .light-theme [class*="from-blue-950"] {
+      --tw-gradient-from: #edf5f8 var(--tw-gradient-from-position) !important;
+      --tw-gradient-to: rgb(237 245 248 / 0) var(--tw-gradient-to-position) !important;
+    }
+    .light-theme [class*="to-sky-950"],
+    .light-theme [class*="to-cyan-950"],
+    .light-theme [class*="to-blue-950"] { --tw-gradient-to: #e3eef3 var(--tw-gradient-to-position) !important; }
+    .light-theme [class*="bg-gradient-to-"][class*="from-sky-950"] {
+      --tw-gradient-stops: #edf5f8, #e3eef3 !important;
+    }
+    .light-theme [class*="from-amber-950"] {
+      --tw-gradient-from: #f7f2e7 var(--tw-gradient-from-position) !important;
+      --tw-gradient-to: rgb(247 242 231 / 0) var(--tw-gradient-to-position) !important;
+    }
+    .light-theme [class*="to-amber-950"] { --tw-gradient-to: #eee8d8 var(--tw-gradient-to-position) !important; }
+    .light-theme [class*="from-rose-950"] {
+      --tw-gradient-from: #f7efed var(--tw-gradient-from-position) !important;
+      --tw-gradient-to: rgb(247 239 237 / 0) var(--tw-gradient-to-position) !important;
+    }
+    .light-theme [class*="to-rose-950"] { --tw-gradient-to: #f0e5e3 var(--tw-gradient-to-position) !important; }
     .light-theme [class*="from-white/90"] {
-      --tw-gradient-from: #e8ede9 var(--tw-gradient-from-position) !important;
-      --tw-gradient-to: rgb(232 237 233 / 0) var(--tw-gradient-to-position) !important;
+      --tw-gradient-from: #f9fbf9 var(--tw-gradient-from-position) !important;
+      --tw-gradient-to: rgb(249 251 249 / 0) var(--tw-gradient-to-position) !important;
     }
-    .light-theme [class*="via-violet-50/85"] { --tw-gradient-via: #e1e8e2 var(--tw-gradient-via-position) !important; }
-    .light-theme [class*="to-indigo-100/90"] { --tw-gradient-to: #dbe5de var(--tw-gradient-to-position) !important; }
-    .light-theme :is([class*="bg-indigo-"], [class*="bg-emerald-"], [class*="bg-green-"], [class*="bg-rose-"], [class*="bg-amber-"], [class*="bg-gradient-to-"])[class~="text-white"] {
-      color: #fff !important;
-    }
-    .light-theme [class*="hover:bg-slate-900"]:hover { background-color: #d7e0d9 !important; }
-    .light-theme [class*="hover:text-white"]:hover { color: #2b3a31 !important; }
+    .light-theme [class*="via-violet-50/85"] { --tw-gradient-via: #edf2ee var(--tw-gradient-via-position) !important; }
+    .light-theme [class*="to-indigo-100/90"] { --tw-gradient-to: #e2eae3 var(--tw-gradient-to-position) !important; }
+
+    .light-theme :is(
+      [class*="bg-indigo-600"],
+      [class*="bg-emerald-600"],
+      [class*="bg-green-600"],
+      [class*="bg-rose-600"],
+      [class*="bg-sky-700"],
+      [class*="from-green-500"],
+      [class*="from-blue-600"]
+    )[class~="text-white"] { color: #fff !important; }
+    .light-theme [class*="bg-gradient-to-"]:not([class*="from-slate-950"]):not([class*="from-slate-900"]):not([class*="from-indigo-950"]):not([class*="from-violet-950"]):not([class*="from-emerald-950"]):not([class*="from-green-950"]):not([class*="from-sky-950"]):not([class*="from-cyan-950"]):not([class*="from-blue-950"]):not([class*="from-amber-950"]):not([class*="from-rose-950"])[class~="text-white"] { color: #fff !important; }
+    .light-theme [class*="hover:bg-slate-900"]:hover { background-color: #dce5de !important; }
+    .light-theme [class*="hover:text-white"]:hover { color: #27372e !important; }
   </style>
 </head>
 <body class="bg-slate-900 text-slate-100">
@@ -777,6 +871,8 @@
         'paperclip': <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/>,
         'layers': <g><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></g>,
         'award': <g><circle cx="12" cy="8" r="7"/><polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"/></g>,
+        'gamepad-2': <g><path d="M6 6h12a4 4 0 0 1 4 4v5a3 3 0 0 1-5 2l-2-2H9l-2 2a3 3 0 0 1-5-2v-5a4 4 0 0 1 4-4z"/><path d="M6 11h4m-2-2v4"/><path d="M15 12h.01M18 10h.01"/></g>,
+        'wallet': <g><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18"/><path d="M7 15h4"/><path d="M17 15h.01"/></g>,
         'alert-circle': <g><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></g>,
         'eye': <g><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></g>,
         'sliders': <g><line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/></g>,
@@ -1210,6 +1306,8 @@
 
     const isHumanResourceDepartmentHead = user =>
       user?.role === 'Department Head' && (user.headOfDept || user.dept) === 'Human Resource Department';
+    const isDepartmentHeadApplicant = (request, users) =>
+      users.some(user => user.id === request.applicantId && user.role === 'Department Head');
 
     const IS_LOCAL_DEMO = window.location.port === '4173';
     const LEAVE_CREDIT_TYPES = [
@@ -1439,6 +1537,7 @@
       const [profileSignatureCleared, setProfileSignatureCleared] = useState(false);
       const [isEditingProfile, setIsEditingProfile] = useState(false);
       const [savingProfile, setSavingProfile] = useState(false);
+      const [selectedMiniGame, setSelectedMiniGame] = useState(null);
       const [tetrisRunning, setTetrisRunning] = useState(false);
       const [tetrisPaused, setTetrisPaused] = useState(false);
       const [tetrisFullscreen, setTetrisFullscreen] = useState(false);
@@ -1461,6 +1560,10 @@
       const [welcomeClock, setWelcomeClock] = useState(() => new Date());
       const [welcomeClock24Hour, setWelcomeClock24Hour] = useState(false);
       const [welcomeClockSeconds, setWelcomeClockSeconds] = useState(false);
+      const [dashboardWeather, setDashboardWeather] = useState(null);
+      const [dashboardWeatherError, setDashboardWeatherError] = useState('');
+      const [dashboardMarket, setDashboardMarket] = useState(null);
+      const [dashboardMarketError, setDashboardMarketError] = useState('');
 
       const [formType, setFormType] = useState('');
       const EMPTY_LEAVE_DETAILS = {
@@ -1531,6 +1634,46 @@
       }).format(welcomeClock));
       const welcomeGreeting = welcomeHour < 12 ? 'Good morning' : welcomeHour < 18 ? 'Good afternoon' : 'Good evening';
       const welcomeDisplayName = currentUser?.firstName || splitProfileName(currentUser).firstName || currentUser?.name || 'there';
+      const weatherDescriptions = {
+        0: 'Clear sky',
+        1: 'Mainly clear',
+        2: 'Partly cloudy',
+        3: 'Overcast',
+        45: 'Fog',
+        48: 'Depositing rime fog',
+        51: 'Light drizzle',
+        53: 'Drizzle',
+        55: 'Heavy drizzle',
+        56: 'Freezing drizzle',
+        57: 'Heavy freezing drizzle',
+        61: 'Light rain',
+        63: 'Rain',
+        65: 'Heavy rain',
+        66: 'Freezing rain',
+        67: 'Heavy freezing rain',
+        71: 'Light snow',
+        73: 'Snow',
+        75: 'Heavy snow',
+        77: 'Snow grains',
+        80: 'Light rain showers',
+        81: 'Rain showers',
+        82: 'Heavy rain showers',
+        85: 'Light snow showers',
+        86: 'Heavy snow showers',
+        95: 'Thunderstorm',
+        96: 'Thunderstorm with hail',
+        99: 'Thunderstorm with heavy hail'
+      };
+      const weatherDescription = dashboardWeather
+        ? weatherDescriptions[dashboardWeather.weather_code] || 'Current conditions'
+        : '';
+      const dashboardUpdateTime = timestamp => timestamp
+        ? new Intl.DateTimeFormat('en-PH', {
+          timeZone: 'Asia/Manila',
+          hour: 'numeric',
+          minute: '2-digit'
+        }).format(new Date(timestamp))
+        : 'Waiting for data';
       const welcomeDate = new Intl.DateTimeFormat('en-PH', {
         timeZone: 'Asia/Manila',
         weekday: 'long',
@@ -1539,6 +1682,7 @@
         year: 'numeric'
       }).format(welcomeClock);
       const hasLiveConnection = isOnline && !isApiUnavailable && !isUsingOfflineCache;
+      const canViewPersonalLeaveCredits = currentUser?.employmentType === 'Permanent';
       const canManageLeaveCredits = currentUser?.status === 'Approved' && (
         currentUser.role === 'Human Resource'
       );
@@ -1556,6 +1700,68 @@
         const timer = setInterval(() => setWelcomeClock(new Date()), welcomeClockSeconds ? 1000 : 30000);
         return () => clearInterval(timer);
       }, [welcomeClockSeconds]);
+
+      useEffect(() => {
+        if (activeTab !== 'dashboard' || !currentUser) return;
+        let isCancelled = false;
+        let weatherController;
+
+        const loadWeather = async () => {
+          weatherController?.abort();
+          weatherController = new AbortController();
+          try {
+            const response = await fetch(
+              'https://api.open-meteo.com/v1/forecast?latitude=11.9986&longitude=120.2043&current=temperature_2m,relative_humidity_2m,apparent_temperature,weather_code,wind_speed_10m&timezone=Asia%2FManila',
+              { signal: weatherController.signal }
+            );
+            if (!response.ok) throw new Error('Weather service is temporarily unavailable.');
+            const data = await response.json();
+            if (
+              typeof data.current?.temperature_2m !== 'number' ||
+              typeof data.current?.weather_code !== 'number'
+            ) {
+              throw new Error('Weather service returned invalid conditions.');
+            }
+            if (!isCancelled) {
+              setDashboardWeather({
+                ...data.current,
+                observationTime: data.current.time,
+                fetchedAt: Date.now()
+              });
+              setDashboardWeatherError('');
+            }
+          } catch (error) {
+            if (!isCancelled && error.name !== 'AbortError') {
+              setDashboardWeatherError(error.message || 'Unable to load current weather.');
+            }
+          }
+        };
+
+        const loadMarket = async () => {
+          try {
+            const quote = await api('market/psei');
+            if (!isCancelled) {
+              setDashboardMarket({ ...quote, fetchedAt: Date.now() });
+              setDashboardMarketError('');
+            }
+          } catch (error) {
+            if (!isCancelled) {
+              setDashboardMarketError(error.message || 'Unable to load the latest PSEi quote.');
+            }
+          }
+        };
+
+        loadWeather();
+        loadMarket();
+        const weatherTimer = window.setInterval(loadWeather, 15 * 60 * 1000);
+        const marketTimer = window.setInterval(loadMarket, 60 * 1000);
+        return () => {
+          isCancelled = true;
+          weatherController?.abort();
+          window.clearInterval(weatherTimer);
+          window.clearInterval(marketTimer);
+        };
+      }, [activeTab, currentUser?.id]);
 
       useEffect(() => {
         if (profileAccount) {
@@ -1876,6 +2082,7 @@
       }, []);
 
       const handleNavigationClick = tab => {
+        if (tab === 'mini-games') setSelectedMiniGame(null);
         setActiveTab(currentTab => currentTab === tab && tab !== 'dashboard' ? 'dashboard' : tab);
       };
 
@@ -1898,11 +2105,19 @@
       };
 
       useEffect(() => {
-        if (activeTab !== 'mini-games' || !isAuthenticated) return;
+        if (activeTab !== 'mini-games' || selectedMiniGame !== 'tetris' || !isAuthenticated) return;
         loadTetrisLeaderboard();
         const timer = setInterval(loadTetrisLeaderboard, 15000);
         return () => clearInterval(timer);
-      }, [activeTab, isAuthenticated]);
+      }, [activeTab, isAuthenticated, selectedMiniGame]);
+
+      useEffect(() => {
+        if (activeTab === 'mini-games') return;
+        setSelectedMiniGame(null);
+        setTetrisRunning(false);
+        setTetrisPaused(false);
+        setTetrisFullscreen(false);
+      }, [activeTab]);
 
       const playTetrisSound = (frequency, duration = 0.08, type = 'square', delay = 0) => {
         const context = tetrisAudio.current;
@@ -2406,6 +2621,9 @@
         let nextDeptApproval = targetReq.deptHeadApproval;
         let nextHrApproval = targetReq.hrApproval || 'Pending';
         let nextFinalApproval = targetReq.finalApproval;
+        const departmentHeadApplicant =
+          targetReq.deptHeadApproval === 'Not required' ||
+          isDepartmentHeadApplicant(targetReq, employees);
         const approverRole = currentUser.role;
         const isDutySwapCoveringUser =
           currentUser.role === 'Employee' &&
@@ -2426,7 +2644,8 @@
           isDutySwapCoveringUser ||
           (isAssignedDepartmentHead && targetReq.status === 'Pending Dept Head Approval' && targetReq.deptHeadApproval === 'Pending') ||
           isHumanResourceReview ||
-          (approverRole === 'Administrative Officer V' && targetReq.status === 'Pending Administrative Officer V Approval' && nextHrApproval === 'Approved' && targetReq.deptHeadApproval === 'Approved') ||
+          (approverRole === 'Administrative Officer V' && targetReq.status === 'Pending Administrative Officer V Approval' &&
+            ['Approved', 'Not required'].includes(nextHrApproval) && ['Approved', 'Not required'].includes(nextDeptApproval)) ||
           (approverRole === 'Chief of Hospital' && targetReq.status === 'Pending Chief of Hospital Approval' && nextFinalApproval === 'Pending Chief of Hospital Approval');
         if (!canReview) return triggerToast('This request is not awaiting your approval stage.', 'error');
 
@@ -2437,7 +2656,13 @@
           else if (reviewRole !== 'Covering Employee') nextFinalApproval = 'Rejected';
         } else if (actionType === 'APPROVE') {
           if (reviewRole === 'Covering Employee') {
-            nextStatus = 'Pending Dept Head Approval';
+            if (departmentHeadApplicant) {
+              nextStatus = 'Pending Human Resource Verification';
+              nextDeptApproval = 'Not required';
+              nextHrApproval = 'Pending';
+            } else {
+              nextStatus = 'Pending Dept Head Approval';
+            }
           } else if (reviewRole === 'Department Head') {
             nextDeptApproval = 'Approved';
             nextStatus = 'Pending Human Resource Verification';
@@ -2494,16 +2719,27 @@
         }
 
         if (actionType === 'APPROVE' && reviewRole === 'Covering Employee') {
+          const nextApproverRole = departmentHeadApplicant ? 'Human Resource' : 'Department Head';
           try {
-            await notifyApprovers(
-              updatedReq,
-              'Department Head',
-              'Approval required: Department Head',
-              `Request ${updatedReq.id} has been accepted by the covering employee and is awaiting your review.`,
-              timeNow
-            );
+            if (departmentHeadApplicant) {
+              await notifyApprovers(
+                updatedReq,
+                'Human Resource',
+                'Verification required: Human Resource',
+                `Request ${updatedReq.id} has been accepted by the covering employee and is awaiting Human Resource verification.`,
+                timeNow
+              );
+            } else {
+              await notifyApprovers(
+                updatedReq,
+                'Department Head',
+                'Approval required: Department Head',
+                `Request ${updatedReq.id} has been accepted by the covering employee and is awaiting your review.`,
+                timeNow
+              );
+            }
           } catch (err) {
-            sideEffectErrors.push(`Department Head notification failed: ${err.message}`);
+            sideEffectErrors.push(`${nextApproverRole} notification failed: ${err.message}`);
           }
         } else if (actionType === 'APPROVE' && reviewRole === 'Department Head') {
           try {
@@ -2725,13 +2961,6 @@
           }
         }
 
-        const cscFormWindow = !editingRequest &&
-          formType === 'Leave' &&
-          leaveFormVariant === 'CSC' &&
-          currentUser.employmentType === 'Permanent'
-          ? window.open('about:blank', '_blank')
-          : null;
-
         let uploaded = null;
         const leaveDetails = formType === 'Leave'
           ? {
@@ -2810,7 +3039,11 @@
           type: formType,
           subType: formType === 'Leave' ? formData.leaveDetails.leaveType : formData.subType,
           section: currentUser.dept || '',
-          status: formType === 'Exchange of Duty' ? 'Pending Duty Swap Approval' : 'Pending Dept Head Approval',
+          status: formType === 'Exchange of Duty'
+            ? 'Pending Duty Swap Approval'
+            : currentUser.role === 'Department Head'
+              ? 'Pending Human Resource Verification'
+              : 'Pending Dept Head Approval',
           applicantId: currentUser.id,
           applicantName: currentUser.name,
           dateFiled: timeNow,
@@ -2826,7 +3059,7 @@
           reason: formData.reason,
           attachmentName: uploaded ? uploaded.fileName : null,
           attachmentId: uploaded ? uploaded.id : null,
-          deptHeadApproval: 'Pending',
+          deptHeadApproval: currentUser.role === 'Department Head' ? 'Not required' : 'Pending',
           hrApproval: 'Pending',
           finalApproval: 'Pending',
           logs: [{ date: timeNow, action: `Submitted by ${currentUser.name}`, user: currentUser.name }]
@@ -2841,18 +3074,28 @@
             ...prev.filter(copy => copy.id !== result.archiveCopy.id)
           ]);
         } catch (err) {
-          cscFormWindow?.close();
           return triggerToast(err.message, 'error');
         }
 
         setRequests(prev => [created, ...prev]);
         setFormData(createEmptyForm(currentUser));
         setFormType('');
-        if (cscFormWindow) openCSCLeaveForm(created, cscFormWindow);
+        let approverNotificationError = null;
         try {
           if (formType === 'Exchange of Duty') {
             await notifyDutySwapCoveringUser(created);
             triggerToast(`Request ${created.id} saved and sent to ${coveringUser.name} for duty-swap approval.`);
+          } else if (created.status === 'Pending Human Resource Verification') {
+            await notifyApprovers(
+              created,
+              'Human Resource',
+              'Verification required: Human Resource',
+              `New request ${created.id} from a Department Head is awaiting Human Resource verification.`,
+              timeNow
+            );
+            if (formType !== 'Leave') {
+              triggerToast(`Request ${created.id} saved and sent to Human Resource, then the Administrative Officer V and Chief of Hospital. Your Department Head approval step is skipped.`);
+            }
           } else {
             await notifyApprovers(
               created,
@@ -2861,18 +3104,26 @@
               `New request ${created.id} is awaiting your review.`,
               timeNow
             );
-            triggerToast(`Request ${created.id} saved and sent to the Department Head.`);
+            if (formType !== 'Leave') triggerToast(`Request ${created.id} saved and sent to the Department Head.`);
           }
         } catch (err) {
-          triggerToast(`Request ${created.id} was saved, but approver notification failed: ${err.message}`, 'error');
+          approverNotificationError = err.message;
+          if (formType !== 'Leave') {
+            triggerToast(`Request ${created.id} was saved, but approver notification failed: ${err.message}`, 'error');
+          }
         }
 
-        if (
-          created.type === 'Leave' &&
-          created.leaveDetails?.formVariant !== 'COS' &&
-          currentUser.employmentType === 'Permanent'
-        ) {
-          setPrintModalRequest(created);
+        if (created.type === 'Leave') {
+          const leaveReportInstructions = created.leaveDetails?.formVariant === 'COS'
+            ? 'View it from My Requests using View Copy > Print Request, then print or save it as a PDF when ready.'
+            : 'From My Requests, choose View Copy > Print Request, then Open CSC Form No. 6 to generate the form. Print it or save it as a PDF when ready.';
+          const departmentHeadWorkflowNotice = currentUser.role === 'Department Head'
+            ? ' It will be reviewed by Human Resource, then the Administrative Officer V and Chief of Hospital; your Department Head self-approval step is skipped.'
+            : '';
+          triggerToast(
+            `Request ${created.id} saved${approverNotificationError ? `, but approver notification failed: ${approverNotificationError}` : ''}.${departmentHeadWorkflowNotice} ${leaveReportInstructions}`,
+            approverNotificationError ? 'error' : 'success'
+          );
         }
         setActiveTab('dashboard');
       };
@@ -2929,7 +3180,9 @@
         }
         if (currentUser?.role === 'Administrative Officer V') {
           return req.status === 'Pending Administrative Officer V Approval' &&
-            req.deptHeadApproval === 'Approved' && req.hrApproval === 'Approved' && req.finalApproval === 'Pending';
+            ['Approved', 'Not required'].includes(req.deptHeadApproval) &&
+            ['Approved', 'Not required'].includes(req.hrApproval) &&
+            req.finalApproval === 'Pending';
         }
         if (currentUser?.role === 'Chief of Hospital') {
           return req.status === 'Pending Chief of Hospital Approval' && req.finalApproval === 'Pending Chief of Hospital Approval';
@@ -3597,21 +3850,19 @@
                 aria-current={activeTab === 'salary-portal' ? 'page' : undefined}
                 className={`w-full min-w-0 min-h-11 flex items-center space-x-2 lg:space-x-3 px-3 lg:px-4 py-2 lg:py-3 rounded-xl text-xs font-semibold leading-tight text-left ${activeTab === 'salary-portal' ? 'bg-indigo-600 text-white' : 'text-slate-400 hover:bg-slate-900'}`}
               >
-                {currentUser.role !== 'Employee' && <Icon name="file-text" className="w-4 h-4 shrink-0" />}
+                <Icon name="wallet" className={`w-6 h-6 shrink-0 ${activeTab === 'salary-portal' ? 'text-white' : 'text-emerald-300'}`} />
                 <span>Salary Portal</span>
               </button>
 
-              {currentUser.role === 'Employee' && (
-                <button
-                  type="button"
-                  onClick={() => handleNavigationClick('mini-games')}
-                  aria-current={activeTab === 'mini-games' ? 'page' : undefined}
-                  className={`w-full min-w-0 min-h-11 flex items-center space-x-2 lg:space-x-3 px-3 lg:px-4 py-2 lg:py-3 rounded-xl text-xs font-semibold leading-tight text-left ${activeTab === 'mini-games' ? 'bg-indigo-600 text-white' : 'text-slate-400 hover:bg-slate-900'}`}
-                >
-                  <Icon name="award" className="w-4 h-4" />
-                  <span>Mini Games</span>
-                </button>
-              )}
+              <button
+                type="button"
+                onClick={() => handleNavigationClick('mini-games')}
+                aria-current={activeTab === 'mini-games' ? 'page' : undefined}
+                className={`w-full min-w-0 min-h-11 flex items-center space-x-2 lg:space-x-3 px-3 lg:px-4 py-2 lg:py-3 rounded-xl text-xs font-semibold leading-tight text-left ${activeTab === 'mini-games' ? 'bg-indigo-600 text-white' : 'text-slate-400 hover:bg-slate-900'}`}
+              >
+                <Icon name="gamepad-2" className={`w-6 h-6 ${activeTab === 'mini-games' ? 'text-white' : 'text-violet-300'}`} />
+                <span>Mini Games</span>
+              </button>
 
               {currentUser.role === 'Department Head' && currentUser.status === 'Approved' && (
                 <button
@@ -3736,6 +3987,7 @@
                 type="button"
                 onClick={() => handleNavigationClick('department-employees')}
                 aria-label="Department employees"
+                title="Department employees"
                 aria-current={activeTab === 'department-employees' ? 'page' : undefined}
                 className={`mx-auto flex h-11 w-11 items-center justify-center rounded-full transition-colors ${activeTab === 'department-employees' ? 'bg-amber-400/10 text-amber-400' : 'text-slate-400 hover:text-white'}`}
               >
@@ -3749,7 +4001,7 @@
                 aria-current={activeTab === 'mini-games' ? 'page' : undefined}
                 className={`mx-auto flex h-11 w-11 items-center justify-center rounded-full transition-colors ${activeTab === 'mini-games' ? 'bg-amber-400/10 text-amber-400' : 'text-slate-400 hover:text-white'}`}
               >
-                <Icon name="award" className="h-5 w-5" />
+                <Icon name="gamepad-2" className={`h-6 w-6 ${activeTab === 'mini-games' ? '' : 'text-violet-300'}`} />
               </button>
             ) : currentUser.role === 'Chief of Hospital' ? (
               <button
@@ -3772,7 +4024,27 @@
                 <Icon name="user" className="h-5 w-5" />
               </button>
             )}
-            {currentUser.role !== 'Employee' && (
+            {currentUser.role === 'Admin' ? (
+              <button
+                type="button"
+                onClick={() => handleNavigationClick('profile')}
+                aria-label="My profile"
+                aria-current={activeTab === 'profile' ? 'page' : undefined}
+                className={`mx-auto flex h-11 w-11 items-center justify-center rounded-full transition-colors ${activeTab === 'profile' ? 'bg-amber-400/10 text-amber-400' : 'text-slate-400 hover:bg-slate-800 hover:text-white'}`}
+              >
+                <Icon name="user" className="h-5 w-5" />
+              </button>
+            ) : currentUser.role === 'Department Head' && currentUser.status === 'Approved' ? (
+              <button
+                type="button"
+                onClick={() => handleNavigationClick('profile')}
+                aria-label="My profile"
+                aria-current={activeTab === 'profile' ? 'page' : undefined}
+                className={`mx-auto flex h-11 w-11 items-center justify-center rounded-full transition-colors ${activeTab === 'profile' ? 'bg-amber-400/10 text-amber-400' : 'text-slate-400 hover:bg-slate-800 hover:text-white'}`}
+              >
+                <Icon name="user" className="h-5 w-5" />
+              </button>
+            ) : currentUser.role !== 'Employee' && (
               <button
                 type="button"
                 onClick={openSalaryPortal}
@@ -3781,13 +4053,13 @@
                 aria-current={activeTab === 'salary-portal' ? 'page' : undefined}
                 className={`mx-auto flex h-11 w-11 items-center justify-center rounded-full transition-colors ${activeTab === 'salary-portal' ? 'bg-amber-400/10 text-amber-400' : 'text-slate-400 hover:bg-slate-800 hover:text-white'}`}
               >
-                <Icon name="file-text" className="h-5 w-5" />
+                <Icon name="wallet" className={`h-6 w-6 ${activeTab === 'salary-portal' ? '' : 'text-emerald-300'}`} />
               </button>
             )}
           </nav>
 
           {/* MAIN CONTENT AREA */}
-          <main className={`flex-1 min-w-0 w-full max-w-[1600px] mx-auto p-4 sm:p-6 lg:p-8 pb-28 lg:pb-8 space-y-5 sm:space-y-6 overflow-x-hidden lg:overflow-y-auto ${activeTab === 'dashboard' ? 'dashboard-main' : ''} ${activeTab === 'dashboard' && currentUser.role === 'Employee' && currentUser.employmentType === 'Permanent' ? 'leave-credits-dashboard' : ''} ${activeTab === 'dashboard' && canManageLeaveCredits ? 'leave-management-dashboard' : ''}`}>
+          <main className={`flex-1 min-w-0 w-full max-w-[1600px] mx-auto p-4 sm:p-6 lg:p-8 pb-28 lg:pb-8 space-y-5 sm:space-y-6 overflow-x-hidden lg:overflow-y-auto ${activeTab === 'dashboard' ? 'dashboard-main' : ''} ${activeTab === 'dashboard' && canViewPersonalLeaveCredits ? 'leave-credits-dashboard' : ''} ${activeTab === 'dashboard' && canManageLeaveCredits ? 'leave-management-dashboard' : ''}`}>
             {activeTab !== 'dashboard' && (!isOnline || isApiUnavailable || isUsingOfflineCache) && (
               <div role="status" className="rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-xs text-amber-200">
                   {isUsingOfflineCache
@@ -3795,7 +4067,7 @@
                     : 'Connection unavailable — no saved data is available on this device. Connect to the internet to continue.'}
               </div>
             )}
-            {(activeTab === 'profile' || (activeTab === 'mini-games' && currentUser.role === 'Employee')) && (
+            {(activeTab === 'profile' || activeTab === 'mini-games') && (
               <div className="w-full max-w-4xl mx-auto space-y-5 sm:space-y-6">
                 {activeTab === 'profile' && (
                   <>
@@ -3869,7 +4141,7 @@
                       )}
                     </div>
                   )}
-                  {currentUser.role !== 'Human Resource' && (
+                  {!['Admin', 'Human Resource', 'Department Head'].includes(currentUser.role) && (
                     <div className="border-t border-slate-800 pt-4 space-y-2">
                       <h3 className="font-bold text-white text-sm">Salary &amp; Payroll</h3>
                       <p className="text-xs text-slate-400">Check your salary and payroll details on the salary portal.</p>
@@ -3908,13 +4180,44 @@
                     </div>
                   </>
                 )}
-                {activeTab === 'mini-games' && (
-                  <div>
-                    <h2 className="text-lg font-bold text-white">Mini Games</h2>
-                    <p className="text-xs text-slate-400 mt-1">Take a break and challenge yourself.</p>
+                {activeTab === 'mini-games' && !selectedMiniGame && (
+                  <div className="w-full max-w-4xl mx-auto space-y-5 sm:space-y-6">
+                    <div>
+                      <h2 className="text-xl font-bold text-slate-100">Choose a game</h2>
+                      <p className="mt-1 text-sm text-slate-400">Pick an available mini game. More games will arrive in future updates.</p>
+                    </div>
+                    <div className="grid gap-4 sm:grid-cols-2">
+                      <button
+                        type="button"
+                        onClick={() => setSelectedMiniGame('tetris')}
+                        className="group min-h-48 rounded-2xl border border-cyan-500/25 bg-gradient-to-br from-slate-950 via-slate-900 to-indigo-950/60 p-5 text-left shadow-lg transition hover:border-cyan-400/50 hover:shadow-cyan-950/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400"
+                      >
+                        <div className="flex items-center justify-between gap-3">
+                          <span className="flex h-12 w-12 items-center justify-center rounded-2xl border border-cyan-400/25 bg-cyan-500/10 text-cyan-300">
+                            <Icon name="gamepad-2" className="h-7 w-7 transition-transform group-hover:scale-110" />
+                          </span>
+                          <span className="rounded-full border border-emerald-400/25 bg-emerald-400/10 px-2.5 py-1 text-[9px] font-bold uppercase tracking-wider text-emerald-300">Available</span>
+                        </div>
+                        <h3 className="mt-4 text-base font-bold text-slate-100">Tetris</h3>
+                        <p className="mt-1 text-xs leading-relaxed text-slate-400">Clear lines, build your score, and climb the live leaderboard.</p>
+                        <span className="mt-4 inline-flex items-center gap-1 text-xs font-bold text-cyan-300 transition group-hover:gap-2">
+                          Play Tetris <Icon name="chevron-right" className="h-4 w-4" />
+                        </span>
+                      </button>
+                      <div aria-label="More games coming soon" className="min-h-48 rounded-2xl border border-slate-700/70 bg-slate-950/50 p-5">
+                        <div className="flex items-center justify-between gap-3">
+                          <span className="flex h-12 w-12 items-center justify-center rounded-2xl border border-violet-400/20 bg-violet-500/10 text-violet-300">
+                            <Icon name="sparkles" className="h-6 w-6" />
+                          </span>
+                          <span className="rounded-full border border-slate-600 bg-slate-800 px-2.5 py-1 text-[9px] font-bold uppercase tracking-wider text-slate-300">Coming soon</span>
+                        </div>
+                        <h3 className="mt-4 text-base font-bold text-slate-100">More games</h3>
+                        <p className="mt-1 text-xs leading-relaxed text-slate-400">New mini games will be added in future updates.</p>
+                      </div>
+                    </div>
                   </div>
                 )}
-                {activeTab === 'mini-games' && (
+                {activeTab === 'mini-games' && selectedMiniGame === 'tetris' && (
                   <section className={`tetris-game-panel overflow-hidden rounded-2xl border border-cyan-500/20 bg-gradient-to-br from-slate-950 via-slate-900 to-indigo-950/60 shadow-xl ${tetrisFullscreen ? 'is-fullscreen' : ''}`}>
                   <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-800 px-4 py-4 sm:px-5">
                     <div>
@@ -3966,6 +4269,19 @@
                         }`}
                       >
                         Sound {tetrisSoundEnabled ? 'on' : 'off'}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSelectedMiniGame(null);
+                          setTetrisRunning(false);
+                          setTetrisPaused(false);
+                          setTetrisFullscreen(false);
+                        }}
+                        aria-label="Back to game selection"
+                        className="h-9 rounded-lg border border-slate-700 bg-slate-900 px-3 text-[10px] font-semibold text-slate-200 transition-colors hover:bg-slate-800"
+                      >
+                        All games
                       </button>
                       <button
                         type="button"
@@ -4180,7 +4496,7 @@
             )}
 
             {activeTab === 'dashboard' && (
-              <div className={`dashboard-view flex flex-col gap-3 ${(currentUser.role === 'Employee' && currentUser.employmentType === 'Permanent') || canManageLeaveCredits ? 'min-h-full' : 'h-full min-h-0'}`}>
+              <div className={`dashboard-view flex flex-col gap-3 ${canViewPersonalLeaveCredits || canManageLeaveCredits ? 'min-h-full' : 'h-full min-h-0'}`}>
                 <div className="relative shrink-0 overflow-hidden rounded-[1.75rem] border border-slate-800 bg-gradient-to-br from-slate-950 via-slate-900 to-indigo-950/70 p-4 shadow-xl sm:p-6">
                   <div className="pointer-events-none absolute -right-10 -top-14 h-44 w-44 rounded-full bg-indigo-500/10 blur-3xl" />
                   <div className="relative mx-auto max-w-3xl space-y-4">
@@ -4263,59 +4579,143 @@
                   </div>
                 </div>
 
-                <div className={`grid content-start grid-cols-2 gap-3 xl:grid-cols-4 ${currentUser.role === 'Employee' && currentUser.employmentType === 'Permanent' ? '' : 'min-h-0 flex-1'}`}>
-                  {currentUser.role === 'Employee' ? (
-                    <>
-                      {currentUser.employmentType === 'Permanent' && (
-                        <div className="col-span-2 grid grid-cols-2 gap-3 xl:col-span-4 xl:grid-cols-4" aria-label="Leave credit balances">
-                          {LEAVE_CREDIT_TYPES.map(credit => (
-                            <section key={credit.key} className="min-h-[6.25rem] min-w-0 rounded-2xl border border-emerald-500/20 bg-gradient-to-br from-emerald-950/70 to-slate-950 p-3">
-                              <div className="flex items-start justify-between gap-2">
-                                <p className="text-[9px] font-bold uppercase leading-tight tracking-wide text-emerald-300">{credit.label}</p>
-                                <Icon name={credit.icon} className="h-3 w-3 shrink-0 text-emerald-300" />
-                              </div>
-                              <p className="mt-2 text-xl font-black text-white sm:text-2xl">{currentUser.leaveCredits?.[credit.key] ?? 'Not set'}</p>
-                              <p className="text-[9px] text-slate-500">days remaining</p>
-                            </section>
-                          ))}
-                        </div>
-                      )}
-                    </>
-                  ) : canManageLeaveCredits ? (
+                <div className="grid grid-cols-1 gap-3 md:grid-cols-2" aria-label="Live weather and Philippine stock market">
+                  <section aria-label="Current weather in Coron, Palawan" className="min-w-0 rounded-2xl border border-sky-500/20 bg-gradient-to-br from-sky-950/70 to-slate-950 p-4 shadow-lg">
+                    <div className="flex items-start justify-between gap-3">
+                      <div>
+                        <h4 className="inline-flex items-center gap-2 text-[10px] font-extrabold uppercase tracking-[0.14em] text-sky-300 sm:text-[11px]">
+                          <Icon name="sun" className="h-4 w-4" />
+                          Weather · Coron, Palawan
+                        </h4>
+                        <p className="mt-1 text-[10px] text-slate-400">
+                          {dashboardWeather ? weatherDescription : 'Current local conditions'}
+                        </p>
+                      </div>
+                      <span className="shrink-0 rounded-full border border-sky-500/20 bg-sky-500/10 px-2 py-1 text-[9px] font-bold text-sky-200">
+                        {dashboardWeather ? 'CURRENT' : 'LOADING'}
+                      </span>
+                    </div>
+                    <div className="mt-3 flex items-end justify-between gap-3">
+                      <p className="text-4xl font-black tracking-tight text-white">
+                        {dashboardWeather ? `${Math.round(dashboardWeather.temperature_2m)}°C` : '—'}
+                      </p>
+                      <div className="text-right text-[10px] leading-5 text-slate-300">
+                        <p>Feels like {dashboardWeather ? `${Math.round(dashboardWeather.apparent_temperature)}°C` : '—'}</p>
+                        <p>Humidity {dashboardWeather ? `${dashboardWeather.relative_humidity_2m}%` : '—'}</p>
+                        <p>Wind {dashboardWeather ? `${dashboardWeather.wind_speed_10m} km/h` : '—'}</p>
+                      </div>
+                    </div>
+                    {dashboardWeatherError && (
+                      <p role="status" className="mt-2 text-[10px] text-amber-300">
+                        {dashboardWeather ? 'Update failed; showing last successful reading.' : dashboardWeatherError}
+                      </p>
+                    )}
+                    <div className="mt-3 flex flex-wrap items-center justify-between gap-1 border-t border-slate-700/70 pt-2 text-[9px] text-slate-500">
+                      <span>Open-Meteo · refreshes every 15 min</span>
+                      <span>Observed {dashboardWeather?.observationTime?.slice(11, 16) || '—'} PH time</span>
+                    </div>
+                  </section>
+
+                  <section aria-label="Philippine Stock Exchange Index" className="min-w-0 rounded-2xl border border-violet-500/20 bg-gradient-to-br from-violet-950/70 to-slate-950 p-4 shadow-lg">
+                    <div className="flex items-start justify-between gap-3">
+                      <div>
+                        <h4 className="inline-flex items-center gap-2 text-[10px] font-extrabold uppercase tracking-[0.14em] text-violet-300 sm:text-[11px]">
+                          <Icon name="file-text" className="h-4 w-4" />
+                          Philippine Stock Exchange
+                        </h4>
+                        <p className="mt-1 text-[10px] text-slate-400">PSEi Composite Index</p>
+                      </div>
+                      <span className="shrink-0 rounded-full border border-violet-500/20 bg-violet-500/10 px-2 py-1 text-[9px] font-bold text-violet-200">
+                        {dashboardMarket ? 'AUTO-REFRESH' : 'LOADING'}
+                      </span>
+                    </div>
+                    <div className="mt-3 flex flex-wrap items-end justify-between gap-3">
+                      <p className="text-3xl font-black tracking-tight text-white">
+                        {dashboardMarket
+                          ? new Intl.NumberFormat('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(dashboardMarket.price)
+                          : '—'}
+                      </p>
+                      <p className={`text-xs font-bold ${dashboardMarket?.change >= 0 ? 'text-emerald-300' : 'text-rose-300'}`}>
+                        {dashboardMarket
+                          ? `${dashboardMarket.change >= 0 ? '+' : ''}${dashboardMarket.change.toFixed(2)} (${dashboardMarket.changePercent >= 0 ? '+' : ''}${dashboardMarket.changePercent.toFixed(2)}%)`
+                          : 'Waiting for quote'}
+                      </p>
+                    </div>
+                    <div className="mt-2 flex justify-between gap-2 text-[10px] text-slate-300">
+                      <span>Day low {dashboardMarket?.dayLow == null ? '—' : dashboardMarket.dayLow.toFixed(2)}</span>
+                      <span>Day high {dashboardMarket?.dayHigh == null ? '—' : dashboardMarket.dayHigh.toFixed(2)}</span>
+                    </div>
+                    {dashboardMarketError && (
+                      <p role="status" className="mt-2 text-[10px] text-amber-300">
+                        {dashboardMarket ? 'Update failed; showing last successful quote.' : dashboardMarketError}
+                      </p>
+                    )}
+                    <div className="mt-3 flex flex-wrap items-center justify-between gap-1 border-t border-slate-700/70 pt-2 text-[9px] text-slate-500">
+                      <a href="https://finance.yahoo.com/quote/PSEI.PS/" target="_blank" rel="noreferrer" className="hover:text-violet-300">Yahoo Finance · refreshes every 60 sec</a>
+                      <span>Quote {dashboardUpdateTime(dashboardMarket?.quoteTime)}</span>
+                    </div>
+                    <p className="mt-1 text-[9px] text-slate-500">Public data may be delayed; not for trading decisions.</p>
+                  </section>
+                </div>
+
+                <div className={`grid content-start grid-cols-2 gap-3 xl:grid-cols-4 ${canViewPersonalLeaveCredits ? '' : 'min-h-0 flex-1'}`}>
+                  <div className="col-span-2 grid grid-cols-2 gap-3 xl:col-span-4" aria-label="Quick links">
+                    <button
+                      type="button"
+                      onClick={() => handleNavigationClick('mini-games')}
+                      className="group flex min-h-16 items-center justify-between gap-2 rounded-2xl border border-indigo-500/25 bg-indigo-950/40 px-3 text-left text-xs font-bold text-slate-200 shadow-sm transition hover:border-indigo-400/50 hover:bg-slate-900 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400"
+                    >
+                      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-indigo-400/25 bg-indigo-500/10 text-indigo-300 shadow-inner">
+                        <Icon name="gamepad-2" className="h-6 w-6 transition-transform group-hover:scale-110" />
+                      </span>
+                      <span className="min-w-0 flex-1">Mini Games</span>
+                      <Icon name="chevron-right" className="h-4 w-4 shrink-0 text-slate-400 transition-transform group-hover:translate-x-0.5" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={openSalaryPortal}
+                      className="group flex min-h-16 items-center justify-between gap-2 rounded-2xl border border-emerald-500/25 bg-emerald-950/40 px-3 text-left text-xs font-bold text-slate-200 shadow-sm transition hover:border-emerald-400/50 hover:bg-slate-900 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400"
+                    >
+                      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-emerald-400/25 bg-emerald-500/10 text-emerald-300 shadow-inner">
+                        <Icon name="wallet" className="h-6 w-6 transition-transform group-hover:scale-110" />
+                      </span>
+                      <span className="min-w-0 flex-1">Salary Portal</span>
+                      <Icon name="chevron-right" className="h-4 w-4 shrink-0 text-slate-400 transition-transform group-hover:translate-x-0.5" />
+                    </button>
+                  </div>
+                  {canViewPersonalLeaveCredits || canManageLeaveCredits ? (
                     <div className="col-span-2 grid grid-cols-2 gap-3 xl:col-span-4 xl:grid-cols-4" aria-label={`Leave credit balances for ${currentUser.name}`}>
-                      {LEAVE_CREDIT_TYPES.map(credit => (
+                      {canViewPersonalLeaveCredits && LEAVE_CREDIT_TYPES.map(credit => (
                         <section key={credit.key} className="min-h-[6.25rem] min-w-0 rounded-2xl border border-emerald-500/20 bg-gradient-to-br from-emerald-950/70 to-slate-950 p-3">
                           <div className="flex items-start justify-between gap-2">
                             <p className="text-[9px] font-bold uppercase leading-tight tracking-wide text-emerald-300">{credit.label}</p>
                             <Icon name={credit.icon} className="h-3 w-3 shrink-0 text-emerald-300" />
                           </div>
-                          <p className="mt-2 text-xl font-black text-white sm:text-2xl">
-                            {currentUser.leaveCredits?.[credit.key] ?? 'Not set'}
-                          </p>
+                          <p className="mt-2 text-xl font-black text-white sm:text-2xl">{currentUser.leaveCredits?.[credit.key] ?? 'Not set'}</p>
                           <p className="text-[9px] text-slate-500">days remaining</p>
                         </section>
                       ))}
-                      <button
-                        type="button"
-                        onClick={() => setActiveTab('leave-credits')}
-                        className="min-h-[6.25rem] min-w-0 rounded-2xl border border-violet-500/30 bg-gradient-to-br from-violet-950/70 to-slate-950 p-3 text-left hover:border-violet-400/60"
-                      >
-                        <span className="flex items-start justify-between gap-2">
-                          <span className="text-[9px] font-bold uppercase leading-tight tracking-wide text-violet-300">Leave Credits</span>
-                          <Icon name="file-text" className="h-3 w-3 shrink-0 text-violet-300" />
-                        </span>
-                        <span className="mt-2 block text-lg font-black text-white">Manage Balances</span>
-                        <span className="block text-[9px] text-slate-500">set employee balances</span>
-                      </button>
+                      {canManageLeaveCredits && (
+                        <button
+                          type="button"
+                          onClick={() => setActiveTab('leave-credits')}
+                          className="min-h-[6.25rem] min-w-0 rounded-2xl border border-violet-500/30 bg-gradient-to-br from-violet-950/70 to-slate-950 p-3 text-left hover:border-violet-400/60"
+                        >
+                          <span className="flex items-start justify-between gap-2">
+                            <span className="text-[9px] font-bold uppercase leading-tight tracking-wide text-violet-300">Leave Credits</span>
+                            <Icon name="file-text" className="h-3 w-3 shrink-0 text-violet-300" />
+                          </span>
+                          <span className="mt-2 block text-lg font-black text-white">Manage Balances</span>
+                          <span className="block text-[9px] text-slate-500">set employee balances</span>
+                        </button>
+                      )}
                     </div>
                   ) : (
-                    <>
-                      <section className="rounded-2xl border border-amber-500/20 bg-slate-950 p-4">
-                        <p className="text-[10px] font-bold uppercase tracking-wider text-amber-300">Awaiting Your Review</p>
-                        <p className="mt-2 text-2xl font-black text-white">{requestsForApproval.length}</p>
-                        <p className="text-[10px] text-slate-500">requests in your queue</p>
-                      </section>
-                    </>
+                    <section className="rounded-2xl border border-amber-500/20 bg-slate-950 p-4">
+                      <p className="text-[10px] font-bold uppercase tracking-wider text-amber-300">Awaiting Your Review</p>
+                      <p className="mt-2 text-2xl font-black text-white">{requestsForApproval.length}</p>
+                      <p className="text-[10px] text-slate-500">requests in your queue</p>
+                    </section>
                   )}
                 </div>
 
@@ -4408,55 +4808,6 @@
             {activeTab === 'department-employees' && currentUser.role === 'Department Head' && currentUser.status === 'Approved' && (
               <div className="space-y-4">
                 <div className="bg-slate-950 rounded-2xl border border-slate-800 p-4 sm:p-5 space-y-4">
-                  <div className="flex items-center gap-4 min-w-0">
-                    <div className="w-16 h-16 rounded-full bg-slate-800 border border-slate-700 overflow-hidden flex items-center justify-center shrink-0">
-                      {profilePhotoPreview ? (
-                        <img src={apiAssetUrl(profilePhotoPreview)} alt={`${currentUser.name}'s profile`} className="w-full h-full object-cover" />
-                      ) : (
-                        <Icon name="user" className="w-8 h-8 text-slate-400" />
-                      )}
-                    </div>
-                    <div className="min-w-0">
-                      <h3 className="text-base font-bold text-white break-words">{currentUser.name}</h3>
-                      <p className="text-xs text-slate-400 mt-1 break-all">{currentUser.email}</p>
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
-                    <div className="min-w-0 bg-slate-900 rounded-xl p-3">
-                      <div className="text-slate-500">Role</div>
-                      <div className="text-slate-200 mt-1">{currentUser.role}</div>
-                    </div>
-                    <div className="min-w-0 bg-slate-900 rounded-xl p-3">
-                      <div className="text-slate-500">Department</div>
-                      <div className="text-slate-200 mt-1">{currentUser.headOfDept || currentUser.dept || 'Not assigned'}</div>
-                    </div>
-                  </div>
-                  <div className="flex items-center justify-center gap-2">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        resetProfileForm();
-                        setProfilePhoto(null);
-                        setProfileSignature(null);
-                        setProfileSignatureCleared(false);
-                        setIsEditingProfile(true);
-                      }}
-                      className="h-10 w-fit inline-flex items-center px-4 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold rounded-xl"
-                    >
-                      Edit Profile
-                    </button>
-                    <button
-                      type="button"
-                      onClick={handleLogout}
-                      className="h-10 w-fit inline-flex items-center gap-2 px-4 bg-rose-950/60 hover:bg-rose-900/70 border border-rose-800 text-rose-300 text-xs font-bold rounded-xl transition-colors"
-                    >
-                      <Icon name="logout" className="w-4 h-4" />
-                      Log out
-                    </button>
-                  </div>
-                </div>
-
-                <div className="bg-slate-950 rounded-2xl border border-slate-800 p-4 sm:p-5 space-y-4">
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-800 pb-3">
                     <div>
                       <h3 className="font-bold text-white text-base">Department Employees</h3>
@@ -4504,14 +4855,6 @@
             {activeTab === 'user-mgmt' && currentUser.role === 'Admin' && (
               <div className="space-y-6">
                 <div className="bg-slate-950 rounded-2xl border border-slate-800 p-4 sm:p-5 space-y-4">
-                  <button
-                    type="button"
-                    onClick={handleLogout}
-                    className="w-full min-h-11 inline-flex items-center justify-center gap-2 px-4 bg-rose-950/60 hover:bg-rose-900/70 border border-rose-800 text-rose-300 text-xs font-bold rounded-xl transition-colors"
-                  >
-                    <Icon name="logout" className="w-4 h-4" />
-                    Log out
-                  </button>
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-800 pb-3">
                     <div>
                       <h3 className="font-bold text-white text-base">Registered System Users Directory</h3>
@@ -5955,7 +6298,9 @@
                             ? 'For approval'
                             : departmentHeadStatus === 'Rejected'
                               ? 'For disapproval'
-                              : 'Pending';
+                              : departmentHeadStatus === 'Not required'
+                                ? 'Not required (submitted by Department Head)'
+                                : 'Pending';
                           return (
                             <div>
                               <div className="font-semibold">{recommendation}</div>

@@ -320,22 +320,11 @@
     background: #e8e8e8;
   }
 
-  #leaveform-back-page {
-    display: none;
-  }
-
-  @media print {
-    #leaveform-back-page {
-      display: block;
-      break-before: page;
-      page-break-before: always;
-    }
-  }
 </style>
 </head>
 <body>
 
-<button type="button" class="print-button" onclick="printFormWithBackPage()">Print Form</button>
+<button type="button" class="print-button" onclick="window.print()">Print Form</button>
 
 <div class="form-container">
   <!-- Top Form Number -->
@@ -606,8 +595,9 @@
         </table>
 
         <div class="sig-block">
-          <input type="text" class="input-plain" style="text-align: center; width: 80%;">
-          <div class="sig-line">(Authorized Officer)</div>
+          <div class="sig-line"></div>
+          <div style="font-size: 8pt; font-weight: bold;">ROLANDO B. BUÑI</div>
+          <div style="font-size: 8pt;">PGDH/Provincial Human Resource Management Officer</div>
         </div>
       </td>
 
@@ -628,8 +618,9 @@
         </div>
 
         <div class="sig-block" style="margin-top: 26px;">
-          <input type="text" class="input-plain" style="text-align: center; width: 80%;">
-          <div class="sig-line">(Authorized Officer)</div>
+          <div class="sig-line"></div>
+          <div style="font-size: 8pt; font-weight: bold;">ARIANE T. CAPALLA, RMT, MD, MMHoA</div>
+          <div style="font-size: 8pt;">Chief of Hospital</div>
         </div>
       </td>
     </tr>
@@ -675,8 +666,6 @@
     </tr>
   </table>
 </div>
-
-<div id="leaveform-back-page" aria-label="Instructions and requirements"></div>
 
 <script>
   (() => {
@@ -732,89 +721,6 @@
       });
     }
 
-    const backPage = document.getElementById('leaveform-back-page');
-    const backPageReady = fetch(new URL('leaveform2.html', window.location.href))
-      .then(response => {
-        if (!response.ok) {
-          throw new Error(`Could not load leaveform2.html (${response.status}).`);
-        }
-        return response.text();
-      })
-      .then(html => {
-        const source = new DOMParser().parseFromString(html, 'text/html');
-        const sourceStyles = source.querySelector('style');
-        const sourceContent = source.querySelector('main');
-        if (!sourceStyles || !sourceContent) {
-          throw new Error('leaveform2.html is missing its styles or page content.');
-        }
-
-        const shadow = backPage.attachShadow({ mode: 'open' });
-        const styles = document.createElement('style');
-        styles.textContent = `${sourceStyles.textContent}
-          @media print {
-            :host {
-              display: block;
-              color: #1f2937;
-              font: 6.8pt/1.1 Arial, Helvetica, sans-serif;
-            }
-            .container {
-              width: auto !important;
-              min-height: 0 !important;
-              max-width: none !important;
-              margin: 0 !important;
-              padding: 0 !important;
-              border: 0 !important;
-              border-radius: 0 !important;
-              box-shadow: none !important;
-            }
-            h1 {
-              margin-bottom: 4pt;
-              font-size: 9pt;
-            }
-            .intro {
-              margin-bottom: 5pt;
-              font-size: 6.8pt;
-            }
-            ol.leave-list {
-              padding-left: 16px;
-            }
-            ol.leave-list > li {
-              margin-bottom: 3pt;
-              font-size: 6.8pt;
-              line-height: 1.1;
-            }
-            ul,
-            ol.sub-alpha {
-              margin-top: 3pt;
-              margin-bottom: 3pt;
-            }
-            ul li,
-            ol.sub-alpha li {
-              margin-bottom: 2pt;
-            }
-            .footnote {
-              margin-top: 6pt;
-              padding-top: 3pt;
-              font-size: 6pt;
-            }
-          }
-        `;
-        shadow.append(styles, document.importNode(sourceContent, true));
-      })
-      .then(() => true)
-      .catch(error => {
-        console.error('Failed to load the CSC leave form back page.', error);
-        backPage.textContent = 'The instructions back page could not be loaded. Reload this form before printing.';
-        return false;
-      });
-
-    window.printFormWithBackPage = async () => {
-      if (!await backPageReady) {
-        window.alert('The instructions back page could not be loaded. Reload this form before printing.');
-        return;
-      }
-      window.print();
-    };
   })();
 </script>
 </body>
