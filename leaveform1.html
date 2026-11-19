@@ -1,0 +1,821 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Civil Service Form No. 6 - Application for Leave</title>
+<style>
+  @page {
+    size: A4 portrait;
+    margin: 0.4in;
+  }
+
+  * {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+  }
+
+  body {
+    font-family: Arial, Helvetica, sans-serif;
+    background-color: #f0f0f0;
+    padding: 20px;
+    color: #000;
+    font-size: 9pt;
+    line-height: 1.25;
+  }
+
+  .form-container {
+    width: 8.27in; /* A4 width */
+    min-height: 11.69in; /* A4 height */
+    margin: 0 auto;
+    background: #fff;
+    padding: 25px 30px;
+    box-shadow: 0 0 10px rgba(0,0,0,0.15);
+  }
+
+  @media print {
+    @page {
+      size: A4 portrait;
+      margin: 0.35in;
+    }
+
+    .print-button {
+      display: none;
+    }
+
+    html,
+    body {
+      width: 210mm;
+      height: auto;
+    }
+
+    body {
+      background: none;
+      padding: 0;
+      font-size: 8.2pt;
+      line-height: 1.12;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+
+    .form-container {
+      width: 100%;
+      max-width: 100%;
+      min-height: 0;
+      box-shadow: none;
+      padding: 0;
+      margin: 0;
+    }
+
+    .header-grid {
+      margin-bottom: 7px;
+    }
+
+    .form-title {
+      margin: 5px 0 7px;
+      font-size: 14pt;
+    }
+
+    table.main-form,
+    table.main-form tr,
+    table.main-form td,
+    table.main-form th {
+      break-inside: avoid;
+    }
+
+    .checkbox-row {
+      margin-bottom: 3px;
+    }
+
+    .sig-block {
+      margin-top: 18px;
+    }
+  }
+
+  /* Header Section */
+  .top-meta {
+    font-size: 7.5pt;
+    font-style: italic;
+    font-weight: bold;
+    line-height: 1.1;
+  }
+
+  .header-grid {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    margin-top: 15px;
+    margin-bottom: 10px;
+  }
+
+  .header-brand {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex: 1;
+  }
+
+  .seal-placeholder {
+    width: 75px;
+    height: 75px;
+    border-radius: 50%;
+    object-fit: cover;
+    display: block;
+    flex-shrink: 0;
+  }
+
+  .agency-title {
+    text-align: center;
+    padding: 0 10px;
+  }
+
+  .agency-title .rep {
+    font-size: 9.5pt;
+  }
+
+  .agency-title .hosp {
+    font-size: 11pt;
+    font-weight: bold;
+    letter-spacing: 0.5px;
+  }
+
+  .agency-title .addr {
+    font-size: 8.5pt;
+  }
+
+  .stamp-box {
+    width: 145px;
+    height: 55px;
+    border: 1px dashed #000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 7.5pt;
+    text-align: center;
+  }
+
+  .form-title {
+    text-align: center;
+    font-size: 15pt;
+    font-weight: bold;
+    letter-spacing: 1px;
+    margin: 8px 0 10px 0;
+  }
+
+  /* Main Table Structure */
+  table.main-form {
+    width: 100%;
+    border-collapse: collapse;
+    border: 1.5px solid #000;
+  }
+
+  table.main-form td, table.main-form th {
+    border: 1px solid #000;
+    padding: 4px 6px;
+    vertical-align: top;
+  }
+
+  .section-banner {
+    text-align: center;
+    font-weight: bold;
+    font-size: 9.5pt;
+    background-color: #fff;
+    padding: 3px !important;
+    border-top: 1.5px solid #000 !important;
+    border-bottom: 1.5px solid #000 !important;
+  }
+
+  .field-label {
+    font-size: 8pt;
+    display: block;
+    margin-bottom: 2px;
+  }
+
+  .name-sublabels {
+    display: flex;
+    justify-content: space-between;
+    font-size: 8pt;
+    padding-right: 40px;
+  }
+
+  .input-line {
+    border: none;
+    border-bottom: 1px solid #000;
+    outline: none;
+    font-family: inherit;
+    font-size: 8.5pt;
+    background: transparent;
+    padding: 0 3px;
+  }
+
+  .input-plain {
+    border: none;
+    outline: none;
+    font-family: inherit;
+    font-size: 9pt;
+    width: 100%;
+    background: transparent;
+    margin-top: 2px;
+  }
+
+  /* Checkboxes and Leave Types */
+  .checkbox-row {
+    display: flex;
+    align-items: flex-start;
+    margin-bottom: 4.5px;
+    font-size: 8pt;
+  }
+
+  .checkbox-row input[type="checkbox"] {
+    margin-right: 5px;
+    margin-top: 1px;
+    width: 11px;
+    height: 11px;
+    accent-color: #000;
+    flex-shrink: 0;
+  }
+
+  .legal-cite {
+    font-size: 6.8pt;
+  }
+
+  .sub-heading {
+    font-style: italic;
+    font-size: 8pt;
+    margin: 5px 0 3px 0;
+  }
+
+  /* Leave Credits Inner Table */
+  table.credits-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 4px;
+    font-size: 8pt;
+  }
+
+  table.credits-table th, table.credits-table td {
+    border: 1px solid #000;
+    padding: 2.5px 4px;
+    text-align: center;
+  }
+
+  table.credits-table td:first-child {
+    text-align: left;
+    width: 44%;
+  }
+
+  table.credits-table input {
+    width: 100%;
+    border: none;
+    text-align: center;
+    font-size: 8pt;
+    outline: none;
+  }
+
+  /* Signature Blocks */
+  .sig-block {
+    margin-top: 24px;
+    text-align: center;
+  }
+
+  .sig-line {
+    border-top: 1px solid #000;
+    width: 82%;
+    margin: 0 auto 2px auto;
+    padding-top: 2px;
+    font-size: 8pt;
+  }
+
+  .inline-fill {
+    display: flex;
+    align-items: flex-end;
+    margin-bottom: 3px;
+    font-size: 8pt;
+  }
+
+  .inline-fill span {
+    white-space: nowrap;
+  }
+
+  .inline-fill input {
+    flex: 1;
+    margin: 0 4px;
+    min-width: 30px;
+  }
+
+  .print-button {
+    display: block;
+    margin: 0 auto 12px;
+    padding: 8px 18px;
+    border: 1px solid #333;
+    border-radius: 4px;
+    background: #fff;
+    font: 10pt Arial, Helvetica, sans-serif;
+    cursor: pointer;
+  }
+
+  .print-button:hover {
+    background: #e8e8e8;
+  }
+
+  #leaveform-back-page {
+    display: none;
+  }
+
+  @media print {
+    #leaveform-back-page {
+      display: block;
+      break-before: page;
+      page-break-before: always;
+    }
+  }
+</style>
+</head>
+<body>
+
+<button type="button" class="print-button" onclick="printFormWithBackPage()">Print Form</button>
+
+<div class="form-container">
+  <!-- Top Form Number -->
+  <div class="top-meta">
+    Civil Service Form No. 6<br>
+    Revised 2020
+  </div>
+
+  <!-- Header with Seal, Hospital Info, and Stamp Box -->
+  <div class="header-grid">
+    <div class="header-brand">
+      <img class="seal-placeholder" src="palawan-seal.jpg" alt="Province of Palawan seal">
+      <div class="agency-title">
+        <div class="rep">Republic of the Philippines</div>
+        <div class="hosp">CORON DISTRICT HOSPITAL</div>
+        <div class="addr">Barangay V (Poblacion) National Highway Coron, Palawan</div>
+      </div>
+    </div>
+    <div class="stamp-box">
+      Stamp of Date of Receipt
+    </div>
+  </div>
+
+  <!-- Main Title -->
+  <div class="form-title">APPLICATION FOR LEAVE</div>
+
+  <!-- Main Grid -->
+  <table class="main-form">
+    <!-- Row 1: Office & Name -->
+    <tr>
+      <td style="width: 42%;">
+        <span class="field-label">1. OFFICE/DEPARTMENT</span>
+        <input type="text" class="input-plain" id="office">
+      </td>
+      <td style="width: 58%;">
+        <div class="name-sublabels">
+          <span>2. NAME : &nbsp;&nbsp;(Last)</span>
+          <span>(First)</span>
+          <span>(Middle)</span>
+        </div>
+        <div style="display: flex; gap: 6px; margin-top: 3px;">
+          <input type="text" class="input-plain" id="last-name" style="width: 35%;">
+          <input type="text" class="input-plain" id="first-name" style="width: 35%;">
+          <input type="text" class="input-plain" id="middle-name" style="width: 30%;">
+        </div>
+      </td>
+    </tr>
+
+    <!-- Row 2: Date, Position, Salary -->
+    <tr>
+      <td>
+        <span class="field-label">3. DATE OF FILING <input type="text" class="input-line" id="date-filed" style="width: 58%;"></span>
+      </td>
+      <td style="padding: 0;">
+        <table style="width: 100%; border-collapse: collapse;">
+          <tr>
+            <td style="border: none; border-right: 1px solid #000; width: 62%; padding: 4px 6px;">
+              <span class="field-label">4. POSITION <input type="text" class="input-line" id="position" style="width: 68%;"></span>
+            </td>
+            <td style="border: none; width: 38%; padding: 4px 6px;">
+              <span class="field-label">5. SALARY <input type="text" class="input-line" id="salary" style="width: 52%;"></span>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+
+    <!-- Section 6 Banner -->
+    <tr>
+      <td colspan="2" class="section-banner">6. DETAILS OF APPLICATION</td>
+    </tr>
+
+    <!-- Section 6.A & 6.B -->
+    <tr>
+      <td style="width: 53%;">
+        <div class="field-label" style="margin-bottom: 6px;">6.A TYPE OF LEAVE TO BE AVAILED OF</div>
+
+        <label class="checkbox-row">
+          <input type="checkbox">
+          <span><strong>Vacation Leave</strong> <span class="legal-cite">(Sec. 51, Rule XVI, Omnibus Rules Implementing E.O. No. 292)</span></span>
+        </label>
+
+        <label class="checkbox-row">
+          <input type="checkbox">
+          <span><strong>Mandatory/Forced Leave</strong> <span class="legal-cite">(Sec. 25, Rule XVI, Omnibus Rules Implementing E.O. No. 292)</span></span>
+        </label>
+
+        <label class="checkbox-row">
+          <input type="checkbox">
+          <span><strong>Sick Leave</strong> <span class="legal-cite">(Sec. 43, Rule XVI, Omnibus Rules Implementing E.O. No. 292)</span></span>
+        </label>
+
+        <label class="checkbox-row">
+          <input type="checkbox">
+          <span><strong>Maternity Leave</strong> <span class="legal-cite">(R.A. No. 11210 / IRR issued by CSC, DOLE and SSS)</span></span>
+        </label>
+
+        <label class="checkbox-row">
+          <input type="checkbox">
+          <span><strong>Paternity Leave</strong> <span class="legal-cite">(R.A. No. 8187 / CSC MC No. 71, s. 1998, as amended)</span></span>
+        </label>
+
+        <label class="checkbox-row">
+          <input type="checkbox">
+          <span><strong>Special Privilege Leave</strong> <span class="legal-cite">(Sec. 21, Rule XVI, Omnibus Rules Implementing E.O. No. 292)</span></span>
+        </label>
+
+        <label class="checkbox-row">
+          <input type="checkbox">
+          <span><strong>Solo Parent Leave</strong> <span class="legal-cite">(RA No. 8972 / CSC MC No. 8, s. 2004)</span></span>
+        </label>
+
+        <label class="checkbox-row">
+          <input type="checkbox">
+          <span><strong>Study Leave</strong> <span class="legal-cite">(Sec. 68, Rule XVI, Omnibus Rules Implementing E.O. No. 292)</span></span>
+        </label>
+
+        <label class="checkbox-row">
+          <input type="checkbox">
+          <span><strong>10-Day VAWC Leave</strong> <span class="legal-cite">(RA No. 9262 / CSC MC No. 15, s. 2005)</span></span>
+        </label>
+
+        <label class="checkbox-row">
+          <input type="checkbox">
+          <span><strong>Rehabilitation Privilege</strong> <span class="legal-cite">(Sec. 55, Rule XVI, Omnibus Rules Implementing E.O. No. 292)</span></span>
+        </label>
+
+        <label class="checkbox-row">
+          <input type="checkbox">
+          <span><strong>Special Leave Benefits for Women</strong> <span class="legal-cite">(RA No. 9710 / CSC MC No. 25, s. 2010)</span></span>
+        </label>
+
+        <label class="checkbox-row">
+          <input type="checkbox">
+          <span><strong>Special Emergency (Calamity) Leave</strong> <span class="legal-cite">(CSC MC No. 2, s. 2012, as amended)</span></span>
+        </label>
+
+        <label class="checkbox-row">
+          <input type="checkbox">
+          <span><strong>Adoption Leave</strong> <span class="legal-cite">(R.A. No. 8552)</span></span>
+        </label>
+
+        <div style="margin-top: 10px; font-size: 8pt;">
+          <em>Others:</em><br>
+          <input type="text" class="input-line" style="width: 92%; margin-top: 4px;">
+        </div>
+      </td>
+
+      <td style="width: 47%;">
+        <div class="field-label" style="margin-bottom: 6px;">6.B DETAILS OF LEAVE</div>
+
+        <div class="sub-heading">In case of Vacation/Special Privilege Leave:</div>
+        <label class="checkbox-row">
+          <input type="checkbox" id="location-within">
+          <span style="width: 100%;">Within the Philippines <input type="text" class="input-line" id="location-destination" style="width: 55%;"></span>
+        </label>
+        <label class="checkbox-row">
+          <input type="checkbox" id="location-abroad">
+          <span style="width: 100%;">Abroad (Specify) <input type="text" class="input-line" id="abroad-destination" style="width: 63%;"></span>
+        </label>
+
+        <div class="sub-heading">In case of Sick Leave:</div>
+        <label class="checkbox-row">
+          <input type="checkbox" id="sick-in-hospital">
+          <span style="width: 100%;">In Hospital (Specify Illness) <input type="text" class="input-line" id="sick-illness-hospital" style="width: 47%;"></span>
+        </label>
+        <label class="checkbox-row">
+          <input type="checkbox" id="sick-outpatient">
+          <span style="width: 100%;">Out Patient (Specify Illness) <input type="text" class="input-line" id="sick-illness-outpatient" style="width: 46%;"></span>
+        </label>
+        <input type="text" class="input-line" style="width: 96%; margin-bottom: 6px;">
+
+        <div class="sub-heading">In case of Special Leave Benefits for Women:</div>
+        <div class="inline-fill">
+          <span>(Specify Illness)</span>
+          <input type="text" class="input-line">
+        </div>
+        <input type="text" class="input-line" style="width: 96%; margin-bottom: 6px;">
+
+        <div class="sub-heading">In case of Study Leave:</div>
+        <label class="checkbox-row">
+          <input type="checkbox">
+          <span>Completion of Master's Degree</span>
+        </label>
+        <label class="checkbox-row">
+          <input type="checkbox">
+          <span>BAR/Board Examination Review</span>
+        </label>
+
+        <div class="sub-heading">Other purpose:</div>
+        <label class="checkbox-row">
+          <input type="checkbox">
+          <span>Monetization of Leave Credits</span>
+        </label>
+        <label class="checkbox-row">
+          <input type="checkbox">
+          <span>Terminal Leave</span>
+        </label>
+      </td>
+    </tr>
+
+    <!-- Section 6.C & 6.D -->
+    <tr>
+      <td>
+        <span class="field-label">6.C NUMBER OF WORKING DAYS APPLIED FOR</span>
+        <input type="text" class="input-line" id="working-days" style="width: 85%; margin-bottom: 8px;">
+
+        <span class="field-label" style="margin-left: 16px;">INCLUSIVE DATES</span>
+        <input type="text" class="input-line" id="inclusive-dates" style="width: 85%; margin-left: 16px;">
+      </td>
+
+      <td>
+        <span class="field-label">6.D COMMUTATION</span>
+        <label class="checkbox-row" style="margin-left: 12px; margin-top: 3px;">
+          <input type="checkbox" id="commutation-not-requested">
+          <span>Not Requested</span>
+        </label>
+        <label class="checkbox-row" style="margin-left: 12px;">
+          <input type="checkbox" id="commutation-requested">
+          <span>Requested</span>
+        </label>
+
+        <div class="sig-block" style="margin-top: 16px;">
+          <input type="text" class="input-plain" style="text-align: center; width: 80%;">
+          <div class="sig-line">(Signature of Applicant)</div>
+        </div>
+      </td>
+    </tr>
+
+    <!-- Section 7 Banner -->
+    <tr>
+      <td colspan="2" class="section-banner">7. DETAILS OF ACTION ON APPLICATION</td>
+    </tr>
+
+    <!-- Section 7.A & 7.B -->
+    <tr>
+      <td>
+        <span class="field-label">7.A CERTIFICATION OF LEAVE CREDITS</span>
+        <div style="text-align: center; font-size: 8pt; margin: 3px 0;">
+          As of <input type="text" class="input-line" value="March 2021" style="width: 45%; text-align: center;">
+        </div>
+
+        <table class="credits-table">
+          <thead>
+            <tr>
+              <th></th>
+              <th>Vacation Leave</th>
+              <th>Sick Leave</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><em>Total Earned</em></td>
+              <td><input type="text"></td>
+              <td><input type="text"></td>
+            </tr>
+            <tr>
+              <td><em>Less this application</em></td>
+              <td><input type="text"></td>
+              <td><input type="text"></td>
+            </tr>
+            <tr>
+              <td><em>Balance</em></td>
+              <td><input type="text"></td>
+              <td><input type="text"></td>
+            </tr>
+          </tbody>
+        </table>
+
+        <div class="sig-block">
+          <input type="text" class="input-plain" style="text-align: center; width: 80%;">
+          <div class="sig-line">(Authorized Officer)</div>
+        </div>
+      </td>
+
+      <td>
+        <span class="field-label">7.B RECOMMENDATION</span>
+        <label class="checkbox-row" style="margin-left: 10px; margin-top: 4px;">
+          <input type="checkbox">
+          <span>For approval</span>
+        </label>
+        <label class="checkbox-row" style="margin-left: 10px;">
+          <input type="checkbox">
+          <span style="width: 100%;">For disapproval due to <input type="text" class="input-line" style="width: 55%;"></span>
+        </label>
+        <div style="padding-left: 26px;">
+          <input type="text" class="input-line" style="width: 95%; margin-bottom: 3px;">
+          <input type="text" class="input-line" style="width: 95%; margin-bottom: 3px;">
+          <input type="text" class="input-line" style="width: 95%;">
+        </div>
+
+        <div class="sig-block" style="margin-top: 26px;">
+          <input type="text" class="input-plain" style="text-align: center; width: 80%;">
+          <div class="sig-line">(Authorized Officer)</div>
+        </div>
+      </td>
+    </tr>
+
+    <!-- Section 7.C & 7.D -->
+    <tr>
+      <td style="border-bottom: none; border-right: none;">
+        <span class="field-label">7.C APPROVED FOR:</span>
+        <div style="padding-left: 14px; margin-top: 4px;">
+          <div class="inline-fill">
+            <input type="text" class="input-line" style="max-width: 65px; text-align: center;">
+            <span>days with pay</span>
+          </div>
+          <div class="inline-fill">
+            <input type="text" class="input-line" style="max-width: 65px; text-align: center;">
+            <span>days without pay</span>
+          </div>
+          <div class="inline-fill">
+            <input type="text" class="input-line" style="max-width: 65px; text-align: center;">
+            <span>others (Specify)</span>
+          </div>
+        </div>
+      </td>
+
+      <td style="border-bottom: none; border-left: none;">
+        <span class="field-label">7.D DISAPPROVED DUE TO:</span>
+        <div style="padding-left: 14px; margin-top: 4px;">
+          <input type="text" class="input-line" style="width: 95%; margin-bottom: 4px;">
+          <input type="text" class="input-line" style="width: 95%; margin-bottom: 4px;">
+          <input type="text" class="input-line" style="width: 95%;">
+        </div>
+      </td>
+    </tr>
+
+    <!-- Bottom Authorized Official Signature -->
+    <tr>
+      <td colspan="2" style="border-top: none; padding-top: 25px;">
+        <div class="sig-block" style="width: 50%; margin: 0 auto;">
+          <input type="text" class="input-plain" style="text-align: center;">
+          <div class="sig-line">(Authorized Official)</div>
+        </div>
+      </td>
+    </tr>
+  </table>
+</div>
+
+<div id="leaveform-back-page" aria-label="Instructions and requirements"></div>
+
+<script>
+  (() => {
+    const params = new URLSearchParams(window.location.search);
+    const setValue = (id, value) => {
+      if (value && document.getElementById(id)) {
+        document.getElementById(id).value = value;
+      }
+    };
+
+    setValue('office', params.get('office'));
+    setValue('last-name', params.get('lastName'));
+    setValue('first-name', params.get('firstName'));
+    setValue('middle-name', params.get('middleName'));
+    setValue('date-filed', params.get('dateFiled'));
+    setValue('position', params.get('position'));
+    setValue('salary', params.get('salary'));
+    setValue('working-days', params.get('workingDays'));
+    setValue('inclusive-dates', params.get('inclusiveDates'));
+
+    const locationType = params.get('locationType');
+    if (locationType === 'Within the Philippines') {
+      document.getElementById('location-within').checked = true;
+      setValue('location-destination', params.get('destination'));
+    } else if (locationType === 'Abroad') {
+      document.getElementById('location-abroad').checked = true;
+      setValue('abroad-destination', params.get('destination'));
+    }
+
+    const sickTreatment = params.get('sickTreatment');
+    if (sickTreatment === 'In Hospital') {
+      document.getElementById('sick-in-hospital').checked = true;
+      setValue('sick-illness-hospital', params.get('illness'));
+    } else if (sickTreatment === 'Out Patient') {
+      document.getElementById('sick-outpatient').checked = true;
+      setValue('sick-illness-outpatient', params.get('illness'));
+    }
+
+    if (params.get('commutation') === 'Requested') {
+      document.getElementById('commutation-requested').checked = true;
+    } else if (params.get('commutation') === 'Not Requested') {
+      document.getElementById('commutation-not-requested').checked = true;
+    }
+
+    const leaveType = params.get('leaveType');
+    if (leaveType) {
+      const normalized = leaveType.toLowerCase();
+      document.querySelectorAll('.checkbox-row input[type="checkbox"]').forEach(checkbox => {
+        const text = checkbox.nextElementSibling?.textContent?.trim().toLowerCase() || '';
+        if (text.startsWith(normalized) && checkbox.closest('td')?.querySelector('.field-label')?.textContent.includes('TYPE OF LEAVE')) {
+          checkbox.checked = true;
+        }
+      });
+    }
+
+    const backPage = document.getElementById('leaveform-back-page');
+    const backPageReady = fetch(new URL('leaveform2.html', window.location.href))
+      .then(response => {
+        if (!response.ok) {
+          throw new Error(`Could not load leaveform2.html (${response.status}).`);
+        }
+        return response.text();
+      })
+      .then(html => {
+        const source = new DOMParser().parseFromString(html, 'text/html');
+        const sourceStyles = source.querySelector('style');
+        const sourceContent = source.querySelector('main');
+        if (!sourceStyles || !sourceContent) {
+          throw new Error('leaveform2.html is missing its styles or page content.');
+        }
+
+        const shadow = backPage.attachShadow({ mode: 'open' });
+        const styles = document.createElement('style');
+        styles.textContent = `${sourceStyles.textContent}
+          @media print {
+            :host {
+              display: block;
+              color: #1f2937;
+              font: 6.8pt/1.1 Arial, Helvetica, sans-serif;
+            }
+            .container {
+              width: auto !important;
+              min-height: 0 !important;
+              max-width: none !important;
+              margin: 0 !important;
+              padding: 0 !important;
+              border: 0 !important;
+              border-radius: 0 !important;
+              box-shadow: none !important;
+            }
+            h1 {
+              margin-bottom: 4pt;
+              font-size: 9pt;
+            }
+            .intro {
+              margin-bottom: 5pt;
+              font-size: 6.8pt;
+            }
+            ol.leave-list {
+              padding-left: 16px;
+            }
+            ol.leave-list > li {
+              margin-bottom: 3pt;
+              font-size: 6.8pt;
+              line-height: 1.1;
+            }
+            ul,
+            ol.sub-alpha {
+              margin-top: 3pt;
+              margin-bottom: 3pt;
+            }
+            ul li,
+            ol.sub-alpha li {
+              margin-bottom: 2pt;
+            }
+            .footnote {
+              margin-top: 6pt;
+              padding-top: 3pt;
+              font-size: 6pt;
+            }
+          }
+        `;
+        shadow.append(styles, document.importNode(sourceContent, true));
+      })
+      .then(() => true)
+      .catch(error => {
+        console.error('Failed to load the CSC leave form back page.', error);
+        backPage.textContent = 'The instructions back page could not be loaded. Reload this form before printing.';
+        return false;
+      });
+
+    window.printFormWithBackPage = async () => {
+      if (!await backPageReady) {
+        window.alert('The instructions back page could not be loaded. Reload this form before printing.');
+        return;
+      }
+      window.print();
+    };
+  })();
+</script>
+</body>
+</html>

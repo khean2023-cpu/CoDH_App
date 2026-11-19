@@ -18,7 +18,8 @@
       const isInstalledApp =
         window.matchMedia('(display-mode: standalone)').matches ||
         window.matchMedia('(display-mode: fullscreen)').matches ||
-        window.navigator.standalone === true;
+        window.navigator.standalone === true ||
+        new URLSearchParams(window.location.search).get('codh-native') === '1';
       if (isInstalledApp) document.documentElement.classList.add('installed-app');
     })();
   </script>
@@ -36,6 +37,55 @@
       padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
       font-family: 'Inter', system-ui, -apple-system, sans-serif;
       overflow-x: hidden;
+    }
+
+    html.installed-app,
+    html.installed-app body {
+      overscroll-behavior-y: none;
+    }
+
+    html.installed-app body {
+      padding: 0;
+    }
+
+    .app-shell {
+      position: fixed;
+      inset: 0;
+      box-sizing: border-box;
+      width: 100%;
+      height: 100vh;
+      height: 100dvh;
+      min-height: 0;
+      overflow: hidden;
+    }
+
+    .app-shell > main {
+      min-height: 0;
+      overflow-y: auto;
+      overscroll-behavior-y: contain;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    .app-shell > main.dashboard-main {
+      overflow-y: hidden;
+    }
+
+    .app-shell > main.dashboard-main.leave-credits-dashboard {
+      overflow-y: auto;
+    }
+
+    .app-shell > main.dashboard-main.leave-management-dashboard {
+      overflow-y: auto;
+    }
+
+    html.installed-app .app-shell {
+      padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+    }
+
+    @media (min-width: 1024px) {
+      .app-shell > aside {
+        height: 100%;
+      }
     }
 
     #app-launch-screen {
@@ -1162,6 +1212,22 @@
       user?.role === 'Department Head' && (user.headOfDept || user.dept) === 'Human Resource Department';
 
     const IS_LOCAL_DEMO = window.location.port === '4173';
+    const LEAVE_CREDIT_TYPES = [
+      { key: 'vacation', label: 'Vacation Leave', icon: 'calendar' },
+      { key: 'sick', label: 'Sick Leave', icon: 'shield-check' },
+      { key: 'mandatoryForced', label: 'Mandatory/Forced Leave', icon: 'clock' },
+      { key: 'maternity', label: 'Maternity Leave', icon: 'user' },
+      { key: 'paternity', label: 'Paternity Leave', icon: 'users' },
+      { key: 'specialPrivilege', label: 'Special Privilege Leave', icon: 'sparkles' },
+      { key: 'soloParent', label: 'Solo Parent Leave', icon: 'user-check' },
+      { key: 'study', label: 'Study Leave', icon: 'file-text' },
+      { key: 'vawc', label: '10-Day VAWC Leave', icon: 'shield-check' },
+      { key: 'rehabilitation', label: 'Rehabilitation Privilege', icon: 'award' },
+      { key: 'specialWomen', label: 'Special Leave Benefits for Women', icon: 'shield-check' },
+      { key: 'specialEmergency', label: 'Special Emergency (Calamity) Leave', icon: 'alert-circle' },
+      { key: 'adoption', label: 'Adoption Leave', icon: 'user-check' },
+      { key: 'wellness', label: 'Wellness Leave', icon: 'sun' }
+    ];
     const CSC_LEAVE_TYPES = [
       'Vacation Leave',
       'Mandatory/Forced Leave',
@@ -1184,6 +1250,39 @@
       'Emergency Leave w/o pay',
       'Others'
     ];
+    const formatMonthDate = (dateValue) => {
+      if (!dateValue) return '';
+      const date = new Date(`${dateValue}T00:00:00`);
+      if (Number.isNaN(date.getTime())) return dateValue;
+      return new Intl.DateTimeFormat('en-PH', {
+        month: 'long',
+        day: 'numeric',
+        year: 'numeric'
+      }).format(date);
+    };
+    const formatInclusiveMonthDates = (startValue, endValue) => {
+      if (!startValue && !endValue) return '';
+      if (!endValue || startValue === endValue) return formatMonthDate(startValue);
+
+      const start = new Date(`${startValue}T00:00:00`);
+      const end = new Date(`${endValue}T00:00:00`);
+      if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) {
+        return `${formatMonthDate(startValue)} to ${formatMonthDate(endValue)}`;
+      }
+
+      const startMonth = new Intl.DateTimeFormat('en-PH', { month: 'long' }).format(start);
+      const endMonth = new Intl.DateTimeFormat('en-PH', { month: 'long' }).format(end);
+      const startYear = start.getFullYear();
+      const endYear = end.getFullYear();
+
+      if (startMonth === endMonth && startYear === endYear) {
+        return `${startMonth} ${start.getDate()}-${end.getDate()}, ${endYear}`;
+      }
+      if (startYear === endYear) {
+        return `${startMonth} ${start.getDate()}-${endMonth} ${end.getDate()}, ${endYear}`;
+      }
+      return `${formatMonthDate(startValue)}-${formatMonthDate(endValue)}`;
+    };
     const splitProfileName = user => {
       if (user?.firstName || user?.lastName || user?.middleName) {
         return {
@@ -1223,6 +1322,14 @@
       const salaryPortalUrl = 'https://tracking.pgpict.com/';
       const TETRIS_WIDTH = 10;
       const TETRIS_HEIGHT = 20;
+      const TETRIS_LINES_PER_LEVEL = 10;
+      const TETRIS_BASE_DROP_INTERVAL = 800;
+      const TETRIS_DROP_INTERVAL_STEP = 30;
+      const TETRIS_MIN_DROP_INTERVAL = 500;
+      const getTetrisDropInterval = level => Math.max(
+        TETRIS_MIN_DROP_INTERVAL,
+        TETRIS_BASE_DROP_INTERVAL - (level - 1) * TETRIS_DROP_INTERVAL_STEP
+      );
       const TETRIS_PIECES = [
         { color: 'cyan', shape: [[1, 1, 1, 1]] },
         { color: 'blue', shape: [[1, 0, 0], [1, 1, 1]] },
@@ -1299,15 +1406,18 @@
       });
 
       const [requests, setRequests] = useState([]);
-      const [transactionPage, setTransactionPage] = useState(1);
-      const [dashboardStatusFilter, setDashboardStatusFilter] = useState('');
       const [approvalStatusFilter, setApprovalStatusFilter] = useState('');
       const [userArchiveCopies, setUserArchiveCopies] = useState([]);
       const [notifications, setNotifications] = useState([]);
       const [showNotifPanel, setShowNotifPanel] = useState(false);
       const [notificationSoundEnabled, setNotificationSoundEnabled] = useState(false);
+      const [deviceNotificationsEnabled, setDeviceNotificationsEnabled] = useState(() => localStorage.getItem('codh-device-notifications') === 'true');
       const notificationAudioContext = useRef(null);
       const notificationSnapshot = useRef({ userId: null, ids: new Set() });
+      const deviceNotificationSnapshot = useRef({ userId: null, ids: new Set(), unreadCount: 0 });
+      const [leaveCreditDrafts, setLeaveCreditDrafts] = useState({});
+      const [savingLeaveCreditUser, setSavingLeaveCreditUser] = useState(null);
+      const [leaveCreditEmployeeFilter, setLeaveCreditEmployeeFilter] = useState('');
       const [isRoleSimulationOpen, setIsRoleSimulationOpen] = useState(false);
 
       const [activeTab, setActiveTab] = useState(savedSession?.activeTab === 'approvals' ? 'archives' : savedSession?.activeTab || 'dashboard');
@@ -1338,14 +1448,14 @@
       const [tetrisLeaderboardError, setTetrisLeaderboardError] = useState('');
       const tetrisAudio = useRef(null);
       const tetrisEngine = useRef({
-        board: createTetrisBoard(), piece: null, nextPiece: null, score: 0,
+        board: createTetrisBoard(), piece: null, nextPiece: null, score: 0, lines: 0,
         level: 1, finished: false
       });
       const [toast, setToast] = useState(null);
       const [dataLoaded, setDataLoaded] = useState(false);
       const [welcomeClock, setWelcomeClock] = useState(() => new Date());
       const [welcomeClock24Hour, setWelcomeClock24Hour] = useState(false);
-      const [welcomeClockSeconds, setWelcomeClockSeconds] = useState(true);
+      const [welcomeClockSeconds, setWelcomeClockSeconds] = useState(false);
 
       const [formType, setFormType] = useState('');
       const EMPTY_LEAVE_DETAILS = {
@@ -1359,7 +1469,7 @@
         relieverTemporaryDesignation: '',
         locationType: 'Within the Philippines',
         destination: '',
-        sickTreatment: 'In Hospital',
+        sickTreatment: '',
         illness: '',
         studyPurposes: [],
         otherPurpose: '',
@@ -1424,11 +1534,23 @@
         year: 'numeric'
       }).format(welcomeClock);
       const hasLiveConnection = isOnline && !isApiUnavailable && !isUsingOfflineCache;
-
+      const canManageLeaveCredits = currentUser?.status === 'Approved' && (
+        currentUser.role === 'Human Resource'
+      );
+      const approvedEmployees = employees.filter(user =>
+        user.role === 'Employee' && user.status === 'Approved' && user.employmentType === 'Permanent'
+      );
+      const normalizedLeaveCreditEmployeeFilter = leaveCreditEmployeeFilter.trim().toLocaleLowerCase();
+      const filteredLeaveCreditEmployees = [...approvedEmployees]
+        .sort((a, b) => a.name.localeCompare(b.name))
+        .filter(employee => !normalizedLeaveCreditEmployeeFilter ||
+          [employee.name, employee.email, employee.dept]
+            .some(value => String(value || '').toLocaleLowerCase().includes(normalizedLeaveCreditEmployeeFilter))
+        );
       useEffect(() => {
-        const timer = setInterval(() => setWelcomeClock(new Date()), 1000);
+        const timer = setInterval(() => setWelcomeClock(new Date()), welcomeClockSeconds ? 1000 : 30000);
         return () => clearInterval(timer);
-      }, []);
+      }, [welcomeClockSeconds]);
 
       useEffect(() => {
         if (profileAccount) {
@@ -1861,7 +1983,7 @@
         const board = createTetrisBoard();
         const piece = createTetrisPiece();
         const nextPiece = createTetrisPiece();
-        tetrisEngine.current = { board, piece, nextPiece, score: 0, level: 1, finished: false };
+        tetrisEngine.current = { board, piece, nextPiece, score: 0, lines: 0, level: 1, finished: false };
         setTetrisBoard(board);
         setTetrisPiece(piece);
         setTetrisNextPiece(nextPiece);
@@ -1899,7 +2021,8 @@
         if (clearedRows) {
           const points = [0, 100, 300, 500, 800][clearedRows] * engine.level;
           engine.score += points;
-          engine.level = Math.floor(engine.score / 500) + 1;
+          engine.lines += clearedRows;
+          engine.level = Math.floor(engine.lines / TETRIS_LINES_PER_LEVEL) + 1;
           setTetrisScore(engine.score);
           setTetrisLevel(engine.level);
           playTetrisSound(clearedRows === 4 ? 880 : 520, 0.18, 'triangle');
@@ -1995,7 +2118,7 @@
 
       useEffect(() => {
         if (!tetrisRunning || tetrisPaused) return;
-        const timer = setInterval(() => moveTetrisPiece(0, 1, false), Math.max(100, 800 - (tetrisLevel - 1) * 65));
+        const timer = setInterval(() => moveTetrisPiece(0, 1, false), getTetrisDropInterval(tetrisLevel));
         return () => clearInterval(timer);
       }, [tetrisRunning, tetrisPaused, tetrisLevel]);
 
@@ -2441,7 +2564,10 @@
             })
           ));
           const copies = results.filter(result => result.status === 'fulfilled').map(result => result.value);
-          setUserArchiveCopies(prev => [...copies, ...prev]);
+          setUserArchiveCopies(prev => [
+            ...copies,
+            ...prev.filter(existing => !copies.some(copy => copy.id === existing.id))
+          ]);
           const failedCopies = results.filter(result => result.status === 'rejected').length;
           if (failedCopies) sideEffectErrors.push(`Saving ${failedCopies} request copy/copies failed.`);
         }
@@ -2502,6 +2628,55 @@
         }));
       };
 
+      const openCSCLeaveForm = (request, formWindow = null) => {
+        if (
+          request.type !== 'Leave' ||
+          request.leaveDetails?.formVariant === 'COS'
+        ) return;
+
+        const params = new URLSearchParams({
+          leaveType: request.leaveDetails?.leaveType === 'Others'
+            ? 'Others'
+            : request.leaveDetails?.leaveType || request.subType || '',
+          office: request.section || '',
+          lastName: currentUser.lastName || '',
+          firstName: currentUser.firstName || '',
+          middleName: currentUser.middleName || '',
+          dateFiled: request.dateFiled || '',
+          position: currentUser.title || request.leaveDetails?.position || '',
+          salary: request.leaveDetails?.salary || currentUser.salary || '',
+          workingDays: request.totalDays ? String(request.totalDays) : '',
+          inclusiveDates: formatInclusiveMonthDates(request.startDate, request.endDate),
+          locationType: ['Vacation Leave', 'Special Privilege Leave'].includes(request.leaveDetails?.leaveType)
+            ? request.leaveDetails?.locationType || ''
+            : '',
+          destination: ['Vacation Leave', 'Special Privilege Leave'].includes(request.leaveDetails?.leaveType)
+            ? request.leaveDetails?.destination || ''
+            : '',
+          sickTreatment: request.leaveDetails?.leaveType === 'Sick Leave'
+            ? request.leaveDetails?.sickTreatment || ''
+            : '',
+          illness: ['Sick Leave', 'Special Leave Benefits for Women'].includes(request.leaveDetails?.leaveType)
+            ? request.leaveDetails?.illness || ''
+            : '',
+          studyPurposes: request.leaveDetails?.leaveType === 'Study Leave'
+            ? (request.leaveDetails?.studyPurposes || []).join(', ')
+            : '',
+          otherPurpose: ['Study Leave', 'Others'].includes(request.leaveDetails?.leaveType)
+            ? request.leaveDetails?.otherPurpose || ''
+            : '',
+          commutation: request.leaveDetails?.commutation || ''
+        });
+
+        const formUrl = `leaveform1.html?${params.toString()}`;
+        if (formWindow && !formWindow.closed) {
+          formWindow.opener = null;
+          formWindow.location.replace(formUrl);
+          return;
+        }
+        window.open(formUrl, '_blank', 'noopener,noreferrer');
+      };
+
       const handleFormSubmit = async (e) => {
         e.preventDefault();
         const timeNow = new Date().toLocaleString();
@@ -2544,6 +2719,13 @@
             return triggerToast('This request can no longer be edited.', 'error');
           }
         }
+
+        const cscFormWindow = !editingRequest &&
+          formType === 'Leave' &&
+          leaveFormVariant === 'CSC' &&
+          currentUser.employmentType === 'Permanent'
+          ? window.open('about:blank', '_blank')
+          : null;
 
         let uploaded = null;
         const leaveDetails = formType === 'Leave'
@@ -2647,14 +2829,21 @@
 
         let created;
         try {
-          created = await api('requests', { method: 'POST', body: newReq });
+          const result = await api('requests', { method: 'POST', body: newReq });
+          created = result.request;
+          setUserArchiveCopies(prev => [
+            result.archiveCopy,
+            ...prev.filter(copy => copy.id !== result.archiveCopy.id)
+          ]);
         } catch (err) {
+          cscFormWindow?.close();
           return triggerToast(err.message, 'error');
         }
 
         setRequests(prev => [created, ...prev]);
         setFormData(createEmptyForm(currentUser));
         setFormType('');
+        if (cscFormWindow) openCSCLeaveForm(created, cscFormWindow);
         try {
           if (formType === 'Exchange of Duty') {
             await notifyDutySwapCoveringUser(created);
@@ -2671,6 +2860,14 @@
           }
         } catch (err) {
           triggerToast(`Request ${created.id} was saved, but approver notification failed: ${err.message}`, 'error');
+        }
+
+        if (
+          created.type === 'Leave' &&
+          created.leaveDetails?.formVariant !== 'COS' &&
+          currentUser.employmentType === 'Permanent'
+        ) {
+          setPrintModalRequest(created);
         }
         setActiveTab('dashboard');
       };
@@ -2738,19 +2935,8 @@
         awaitingCurrentApproval(req) ||
         (currentUser?.role === 'Department Head' && req.deptHeadApproval === 'Approved')
       );
-      const dashboardStatuses = [...new Set(visibleRequests.map(req => req.status).filter(Boolean))].sort();
       const approvalStatuses = [...new Set(requestsForApproval.map(req => req.status).filter(Boolean))].sort();
-      const filteredDashboardRequests = visibleRequests.filter(req => !dashboardStatusFilter || req.status === dashboardStatusFilter);
       const filteredApprovalRequests = requestsForApproval.filter(req => !approvalStatusFilter || req.status === approvalStatusFilter);
-      const transactionPageCount = Math.max(1, Math.ceil(filteredDashboardRequests.length / 10));
-      const currentTransactionPage = Math.min(transactionPage, transactionPageCount);
-      const pagedTransactions = filteredDashboardRequests.slice(
-        (currentTransactionPage - 1) * 10,
-        currentTransactionPage * 10,
-      );
-      useEffect(() => {
-        setTransactionPage(1);
-      }, [dashboardStatusFilter]);
 
       const myArchivedCopies = useMemo(() => {
         if (!currentUser) return [];
@@ -2767,6 +2953,58 @@
         return notifications.filter(n => n.userId === currentUser.id && !n.read);
       }, [notifications, currentUser]);
 
+      useEffect(() => {
+        const setBadge = userUnreadNotifs.length
+          ? navigator.setAppBadge?.(userUnreadNotifs.length)
+          : navigator.clearAppBadge?.();
+        setBadge?.catch(err => console.error('Could not update the app badge:', err));
+        if (userUnreadNotifs.length === 0) {
+          window.Capacitor?.Plugins?.LocalNotifications?.cancel?.({ notifications: [{ id: 6136 }] })
+            ?.catch(err => console.error('Could not clear the device notification:', err));
+        }
+      }, [userUnreadNotifs.length]);
+
+      useEffect(() => {
+        if (!dataLoaded || !currentUser) return;
+        const ids = new Set(userNotifs.map(notification => notification.id));
+        const previous = deviceNotificationSnapshot.current;
+        if (previous.userId !== currentUser.id) {
+          deviceNotificationSnapshot.current = { userId: currentUser.id, ids, unreadCount: userUnreadNotifs.length };
+          return;
+        }
+        const newlyUnread = userUnreadNotifs.filter(notification => !previous.ids.has(notification.id));
+        const unreadCountChanged = previous.unreadCount !== userUnreadNotifs.length;
+        deviceNotificationSnapshot.current = { userId: currentUser.id, ids, unreadCount: userUnreadNotifs.length };
+        if (!deviceNotificationsEnabled || (newlyUnread.length === 0 && !unreadCountChanged)) return;
+
+        const localNotifications = window.Capacitor?.Plugins?.LocalNotifications;
+        if (localNotifications?.schedule) {
+          if (userUnreadNotifs.length === 0) {
+            localNotifications.cancel({ notifications: [{ id: 6136 }] })
+              .catch(err => console.error('Could not clear the device notification:', err));
+          } else {
+            localNotifications.schedule({
+              notifications: [{
+                id: 6136,
+                title: `${userUnreadNotifs.length} unread CoDH notification${userUnreadNotifs.length === 1 ? '' : 's'}`,
+                body: (newlyUnread[0] || userUnreadNotifs[0]).title,
+                schedule: { at: new Date(Date.now() + 1000) },
+                group: 'codh-notifications',
+                groupSummary: true,
+                autoCancel: false
+              }]
+            }).catch(err => {
+              console.error('Could not show a device notification:', err);
+              triggerToast(`Could not show a device notification: ${err.message}`, 'error');
+            });
+          }
+        } else if (newlyUnread.length && 'Notification' in window && Notification.permission === 'granted') {
+          new Notification(`${userUnreadNotifs.length} unread CoDH notification${userUnreadNotifs.length === 1 ? '' : 's'}`, {
+            body: newlyUnread[0].title
+          });
+        }
+      }, [dataLoaded, currentUser?.id, userNotifs, userUnreadNotifs, deviceNotificationsEnabled]);
+
       if (authChecking) {
         return (
           <div className="min-h-screen flex items-center justify-center bg-slate-950 text-slate-300 text-sm">
@@ -2774,6 +3012,91 @@
           </div>
         );
       }
+
+      const requestDeviceNotifications = async () => {
+        try {
+          const localNotifications = window.Capacitor?.Plugins?.LocalNotifications;
+          if (localNotifications?.checkPermissions && localNotifications?.requestPermissions) {
+            let permission = await localNotifications.checkPermissions();
+            if (permission.display !== 'granted') permission = await localNotifications.requestPermissions();
+            if (permission.display !== 'granted') {
+              triggerToast('Device notification permission was not granted.', 'error');
+              return;
+            }
+          } else if ('Notification' in window) {
+            const permission = await Notification.requestPermission();
+            if (permission !== 'granted') {
+              triggerToast('Browser notification permission was not granted.', 'error');
+              return;
+            }
+          } else {
+            triggerToast('Device notifications are not supported on this device.', 'error');
+            return;
+          }
+          localStorage.setItem('codh-device-notifications', 'true');
+          setDeviceNotificationsEnabled(true);
+          triggerToast('Device notifications enabled. New updates are checked while the app is running.');
+        } catch (err) {
+          console.error('Could not enable device notifications:', err);
+          triggerToast(`Could not enable device notifications: ${err.message}`, 'error');
+        }
+      };
+
+      const toggleDeviceNotifications = async () => {
+        if (!deviceNotificationsEnabled) {
+          await requestDeviceNotifications();
+          return;
+        }
+        localStorage.setItem('codh-device-notifications', 'false');
+        setDeviceNotificationsEnabled(false);
+        window.Capacitor?.Plugins?.LocalNotifications?.cancel?.({ notifications: [{ id: 6136 }] })
+          ?.catch(err => console.error('Could not clear the device notification:', err));
+        triggerToast('Device notifications disabled.');
+      };
+
+      const createLeaveCreditDraft = employee => Object.fromEntries(
+        LEAVE_CREDIT_TYPES.map(({ key }) => [
+          key,
+          employee.leaveCredits?.[key] == null ? '' : String(employee.leaveCredits[key])
+        ])
+      );
+
+      const saveLeaveCredits = async employee => {
+        const draft = leaveCreditDrafts[employee.id] || createLeaveCreditDraft(employee);
+        const leaveCredits = {};
+        for (const { key } of LEAVE_CREDIT_TYPES) {
+          const value = String(draft[key] ?? '').trim();
+          if (!value) {
+            leaveCredits[key] = null;
+            continue;
+          }
+          if (!/^\d{1,4}(\.\d{1,2})?$/.test(value) || Number(value) > 9999.99) {
+            triggerToast('Enter non-negative leave balances with up to two decimal places, or leave them blank.', 'error');
+            return;
+          }
+          leaveCredits[key] = Number(value);
+        }
+
+        setSavingLeaveCreditUser(employee.id);
+        try {
+          const updated = await api(`users/${encodeURIComponent(employee.id)}`, {
+            method: 'PUT',
+            body: { leaveCredits }
+          });
+          setEmployees(current => current.map(user => user.id === employee.id ? { ...user, ...updated } : user));
+          setLeaveCreditDrafts(current => {
+            const next = { ...current };
+            delete next[employee.id];
+            return next;
+          });
+          triggerToast(`Leave credits saved for ${employee.name}.`);
+        } catch (err) {
+          console.error('Could not save leave credits:', err);
+          triggerToast(`Could not save leave credits: ${err.message}`, 'error');
+        } finally {
+          setSavingLeaveCreditUser(null);
+        }
+      };
 
       const handleOpenNotification = async (notification) => {
         const requestId = notification.requestId || notification.message.match(/\((REQ-[^)]+)\)/)?.[1];
@@ -3043,7 +3366,7 @@
       }
 
       return (
-        <div className={`min-h-screen min-h-[100dvh] bg-slate-900 font-sans flex flex-col lg:flex-row ${isLightMode ? 'light-theme' : ''}`}>
+        <div className={`app-shell min-h-screen min-h-[100dvh] bg-slate-900 font-sans flex flex-col lg:flex-row ${isLightMode ? 'light-theme' : ''}`}>
           {toast && (
             <div className="fixed top-5 right-5 z-50 p-4 rounded-xl bg-gradient-to-br from-blue-600/75 via-indigo-700/80 to-sky-700/75 backdrop-blur-xl border border-blue-200/40 text-white text-xs shadow-2xl">
               {toast.msg}
@@ -3092,7 +3415,9 @@
                   >
                     <Icon name="bell" className="w-5 h-5" />
                     {userUnreadNotifs.length > 0 && (
-                      <span className="absolute top-1.5 right-1.5 w-3 h-3 bg-rose-500 rounded-full animate-pulse"></span>
+                      <span className="absolute -right-0.5 -top-0.5 min-w-4 rounded-full bg-rose-500 px-1 text-[9px] font-bold leading-4 text-white">
+                        {userUnreadNotifs.length > 99 ? '99+' : userUnreadNotifs.length}
+                      </span>
                     )}
                   </button>
 
@@ -3104,20 +3429,32 @@
                     <div id="notifications-panel" className="fixed z-50 top-[4.5rem] left-3 right-3 sm:left-auto sm:right-4 sm:w-[22rem] lg:left-[19rem] lg:right-auto lg:top-6 max-h-[min(74dvh,38rem)] flex flex-col overflow-hidden rounded-2xl border border-slate-700/80 bg-slate-950/95 text-slate-100 shadow-[0_24px_80px_rgba(2,6,23,0.65)] backdrop-blur-2xl">
                       <div className="relative shrink-0 overflow-hidden border-b border-slate-700/70 bg-gradient-to-br from-emerald-500/15 via-slate-900/70 to-slate-950 px-4 py-4">
                         <div className="absolute -right-8 -top-12 h-32 w-32 rounded-full bg-emerald-400/10 blur-2xl" />
-                        <div className="relative flex items-center justify-between gap-3">
+                        <div className="relative flex flex-wrap items-center justify-between gap-3">
                           <div className="flex min-w-0 items-center gap-3">
                             <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-green-400 to-emerald-700 text-white shadow-lg shadow-emerald-950/40">
                               <Icon name="bell" className="h-5 w-5" />
                             </span>
                             <div className="min-w-0">
                               <h2 className="text-sm font-bold tracking-tight text-white">Notifications</h2>
-                              <p className="mt-0.5 text-[10px] text-slate-400">Live updates every 15 seconds</p>
+                              <p className="mt-0.5 text-[10px] text-slate-400">Checks while open · icon badges depend on device support</p>
                             </div>
                           </div>
-                          <div className="flex shrink-0 items-center gap-2">
+                          <div className="flex shrink-0 flex-wrap items-center justify-end gap-1.5">
                             <span className="rounded-full border border-emerald-400/20 bg-emerald-400/10 px-2.5 py-1 text-[10px] font-semibold text-emerald-300">
                               {userUnreadNotifs.length} unread
                             </span>
+                            <button
+                              type="button"
+                              onClick={toggleDeviceNotifications}
+                              aria-pressed={deviceNotificationsEnabled}
+                              className={`rounded-lg border px-2.5 py-1.5 text-[10px] font-semibold transition-colors ${
+                                deviceNotificationsEnabled
+                                  ? 'border-emerald-400/40 bg-emerald-400/15 text-emerald-200'
+                                  : 'border-slate-700 bg-slate-900/80 text-slate-300 hover:border-slate-500'
+                              }`}
+                            >
+                              {deviceNotificationsEnabled ? 'Alerts on' : 'Enable alerts'}
+                            </button>
                             <button
                               type="button"
                               onClick={toggleNotificationSound}
@@ -3173,6 +3510,9 @@
                           ))
                         )}
                       </div>
+                      <p className="shrink-0 border-t border-slate-800 px-3 py-2 text-[9px] leading-relaxed text-slate-500">
+                        Closed-app alerts require server push setup; Android launcher badges vary by device.
+                      </p>
                     </div>
                   )}
                 </div>
@@ -3275,6 +3615,18 @@
                 >
                   <Icon name="users" className="w-4 h-4" />
                   <span>Department Employees ({departmentEmployees.length})</span>
+                </button>
+              )}
+
+              {canManageLeaveCredits && (
+                <button
+                  type="button"
+                  onClick={() => handleNavigationClick('leave-credits')}
+                  aria-current={activeTab === 'leave-credits' ? 'page' : undefined}
+                  className={`w-full min-w-0 min-h-11 flex items-center space-x-2 lg:space-x-3 px-3 lg:px-4 py-2 lg:py-3 rounded-xl text-xs font-semibold leading-tight text-left ${activeTab === 'leave-credits' ? 'bg-indigo-600 text-white' : 'text-slate-400 hover:bg-slate-900'}`}
+                >
+                  <Icon name="file-text" className="w-4 h-4" />
+                  <span>Leave Credits</span>
                 </button>
               )}
 
@@ -3430,8 +3782,8 @@
           </nav>
 
           {/* MAIN CONTENT AREA */}
-          <main className="flex-1 min-w-0 w-full max-w-[1600px] mx-auto p-4 sm:p-6 lg:p-8 pb-28 lg:pb-8 space-y-5 sm:space-y-6 overflow-x-hidden lg:overflow-y-auto">
-            {(!isOnline || isApiUnavailable || isUsingOfflineCache) && (
+          <main className={`flex-1 min-w-0 w-full max-w-[1600px] mx-auto p-4 sm:p-6 lg:p-8 pb-28 lg:pb-8 space-y-5 sm:space-y-6 overflow-x-hidden lg:overflow-y-auto ${activeTab === 'dashboard' ? 'dashboard-main' : ''} ${activeTab === 'dashboard' && currentUser.role === 'Employee' && currentUser.employmentType === 'Permanent' ? 'leave-credits-dashboard' : ''} ${activeTab === 'dashboard' && canManageLeaveCredits ? 'leave-management-dashboard' : ''}`}>
+            {activeTab !== 'dashboard' && (!isOnline || isApiUnavailable || isUsingOfflineCache) && (
               <div role="status" className="rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-xs text-amber-200">
                   {isUsingOfflineCache
                     ? 'Offline mode — showing saved data from this device. Changes are disabled until the app reconnects.'
@@ -3512,17 +3864,19 @@
                       )}
                     </div>
                   )}
-                  <div className="border-t border-slate-800 pt-4 space-y-2">
-                    <h3 className="font-bold text-white text-sm">Salary &amp; Payroll</h3>
-                    <p className="text-xs text-slate-400">Check your salary and payroll details on the salary portal.</p>
-                    <button
-                      type="button"
-                      onClick={openSalaryPortal}
-                      className="inline-flex min-h-10 items-center rounded-xl bg-emerald-600 px-4 py-2 text-xs font-bold text-white transition-colors hover:bg-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-400"
-                    >
-                      Open salary portal
-                    </button>
-                  </div>
+                  {currentUser.role !== 'Human Resource' && (
+                    <div className="border-t border-slate-800 pt-4 space-y-2">
+                      <h3 className="font-bold text-white text-sm">Salary &amp; Payroll</h3>
+                      <p className="text-xs text-slate-400">Check your salary and payroll details on the salary portal.</p>
+                      <button
+                        type="button"
+                        onClick={openSalaryPortal}
+                        className="inline-flex min-h-10 items-center rounded-xl bg-emerald-600 px-4 py-2 text-xs font-bold text-white transition-colors hover:bg-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-400"
+                      >
+                        Open salary portal
+                      </button>
+                    </div>
+                  )}
                   <div className="flex flex-wrap items-center justify-end gap-2 border-t border-slate-800 pt-4">
                     <button
                       type="button"
@@ -3560,7 +3914,7 @@
                   <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-800 px-4 py-4 sm:px-5">
                     <div>
                       <h3 className="text-sm font-bold text-white">Tetris</h3>
-                      <p className="mt-1 text-[11px] text-slate-400">Clear lines to score points. The game speeds up as your level rises.</p>
+                      <p className="mt-1 text-[11px] text-slate-400">Clear lines to score points. Difficulty increases gradually as you progress.</p>
                     </div>
                     <div className="flex items-center gap-3">
                       <div className="text-right">
@@ -3725,7 +4079,7 @@
                       <div className="tetris-game-instructions mt-3 flex flex-wrap items-center justify-center gap-2 text-[10px] text-slate-400">
                         <span>← → move</span><span>↓ soft drop</span><span>↑ / X rotate</span><span>Space hard drop</span><span>P pause</span>
                       </div>
-                      <p className="tetris-game-level-note mt-2 text-center text-[10px] text-slate-500">Every 500 points advances a level and increases the falling speed.</p>
+                      <p className="tetris-game-level-note mt-2 text-center text-[10px] text-slate-500">Every 10 cleared lines advances a level. Falling speed increases gradually and is capped.</p>
                     </div>
                     <div className="rounded-xl border border-slate-800 bg-slate-950/60 p-3 sm:p-4">
                       <div className="mb-4 flex items-center justify-between rounded-lg border border-slate-800 bg-slate-900/60 p-3">
@@ -3821,12 +4175,12 @@
             )}
 
             {activeTab === 'dashboard' && (
-              <div className="space-y-6">
-                <div className="relative overflow-hidden rounded-[1.75rem] border border-slate-800 bg-gradient-to-br from-slate-950 via-slate-900 to-indigo-950/70 p-4 shadow-xl sm:p-6">
+              <div className={`dashboard-view flex flex-col gap-3 ${(currentUser.role === 'Employee' && currentUser.employmentType === 'Permanent') || canManageLeaveCredits ? 'min-h-full' : 'h-full min-h-0'}`}>
+                <div className="relative shrink-0 overflow-hidden rounded-[1.75rem] border border-slate-800 bg-gradient-to-br from-slate-950 via-slate-900 to-indigo-950/70 p-4 shadow-xl sm:p-6">
                   <div className="pointer-events-none absolute -right-10 -top-14 h-44 w-44 rounded-full bg-indigo-500/10 blur-3xl" />
-                  <div className="relative mx-auto max-w-3xl space-y-5">
+                  <div className="relative mx-auto max-w-3xl space-y-4">
                     <div className="flex items-center gap-3">
-                      <div className="relative h-16 w-16 shrink-0 rounded-full border-2 border-indigo-400/50 bg-slate-800 p-0.5 shadow-lg shadow-indigo-950/50 sm:h-[4.5rem] sm:w-[4.5rem]">
+                      <div className="relative h-14 w-14 shrink-0 rounded-full border-2 border-indigo-400/50 bg-slate-800 p-0.5 shadow-lg shadow-indigo-950/50 sm:h-[4.5rem] sm:w-[4.5rem]">
                         <div className="h-full w-full overflow-hidden rounded-full bg-gradient-to-br from-indigo-500/40 to-slate-800">
                           {currentUser.avatar ? (
                             <img src={apiAssetUrl(currentUser.avatar)} alt={`${currentUser.name}'s profile`} className="h-full w-full object-cover" />
@@ -3861,7 +4215,7 @@
 
                     <section
                       aria-label="Live system clock"
-                      className="rounded-[1.4rem] border border-slate-700/80 bg-slate-800/45 p-4 shadow-lg shadow-slate-950/20 sm:p-5"
+                      className="rounded-2xl border border-slate-700/80 bg-slate-800/45 p-4 shadow-lg shadow-slate-950/20"
                     >
                       <div className="flex flex-wrap items-center justify-between gap-3">
                         <h4 className="inline-flex items-center gap-2 text-[10px] font-extrabold uppercase tracking-[0.14em] text-indigo-300 sm:text-[11px]">
@@ -3887,138 +4241,163 @@
                           </button>
                         </div>
                       </div>
-
                       <div className="mt-3 flex items-baseline gap-2 font-mono text-4xl font-black tracking-tight text-indigo-50 sm:mt-4 sm:text-5xl">
-                        <time aria-label={`${welcomeClockTime}${welcomeClockDayPeriod ? ` ${welcomeClockDayPeriod}` : ''}`}>
-                          {welcomeClockTime}
-                        </time>
-                        {!welcomeClock24Hour && welcomeClockDayPeriod && (
-                          <span className="text-base font-extrabold uppercase tracking-normal text-indigo-400 sm:text-lg">
-                            {welcomeClockDayPeriod}
-                          </span>
-                        )}
+                          <time aria-label={`${welcomeClockTime}${welcomeClockDayPeriod ? ` ${welcomeClockDayPeriod}` : ''}`}>
+                            {welcomeClockTime}
+                          </time>
+                          {!welcomeClock24Hour && welcomeClockDayPeriod && (
+                            <span className="text-base font-extrabold uppercase tracking-normal text-indigo-400 sm:text-lg">{welcomeClockDayPeriod}</span>
+                          )}
                       </div>
-
                       <div className="mt-4 flex flex-wrap items-center justify-between gap-2 border-t border-slate-700/70 pt-3 text-[10px] font-semibold text-slate-300 sm:text-xs">
                         <time dateTime={welcomeClock.toISOString()}>{welcomeDate}</time>
-                        <span className="rounded-full border border-slate-700 bg-slate-800/70 px-2.5 py-1 text-[9px] text-slate-400">
-                          UTC+08:00
-                        </span>
+                        <span className="rounded-full border border-slate-700 bg-slate-800/70 px-2.5 py-1 text-[9px] text-slate-400">UTC+08:00</span>
                       </div>
                     </section>
 
-                    {currentUser.role === 'Admin' && (
-                      <span className="inline-flex w-fit max-w-full rounded-full border border-indigo-500 bg-indigo-950 px-3 py-1 text-[10px] font-bold text-indigo-300">
-                        System Admin Full Visibility
-                      </span>
-                    )}
                   </div>
                 </div>
 
-                {/* RECENT TRANSACTIONS TABLE */}
-                <div className="bg-slate-950 rounded-2xl border border-slate-800 p-4 sm:p-5 space-y-4">
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                    <h4 className="font-bold text-sm text-white">System Applications & Workflows</h4>
-                    {currentUser.role === 'Admin' && (
-                      <span className="text-[11px] text-indigo-400 font-semibold">Viewing All Hospital Transactions</span>
-                    )}
-                  </div>
-                  <div className="flex flex-col sm:flex-row sm:items-end gap-3">
-                    <label className="w-full max-w-sm space-y-1">
-                      <span className="block text-[11px] font-semibold text-slate-400">Status</span>
-                      <select
-                        value={dashboardStatusFilter}
-                        onChange={event => setDashboardStatusFilter(event.target.value)}
-                        className="w-full rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-xs text-white"
-                      >
-                        <option value="">All statuses</option>
-                        {dashboardStatuses.map(status => <option key={status} value={status}>{status}</option>)}
-                      </select>
-                    </label>
-                    <button
-                      type="button"
-                      onClick={() => setDashboardStatusFilter('')}
-                      disabled={!dashboardStatusFilter}
-                      className="w-fit rounded-lg border border-slate-700 px-3 py-2 text-xs font-semibold text-slate-300 hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-40"
-                    >
-                      Clear
-                    </button>
-                  </div>
-
-                  <div className="divide-y divide-slate-800">
-                    {filteredDashboardRequests.length === 0 ? (
-                      <div className="py-6 text-center text-slate-500 text-xs">
-                        {visibleRequests.length === 0 ? 'No transactions recorded for this view.' : 'No transactions match the selected filters.'}
-                      </div>
-                    ) : (
-                      pagedTransactions.map((req) => (
-                        <div key={req.id} className="py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
-                          <div className="min-w-0">
-                            <div className="font-bold text-indigo-400">{req.id} — {req.type} ({req.subType})</div>
-                            <div className="text-slate-400 mt-0.5 break-words">Applicant: <strong className="text-slate-200">{req.applicantName}</strong> • Section: {req.section}</div>
-                          </div>
-                          <div className="flex flex-wrap items-center justify-between sm:justify-end gap-2 sm:gap-3 shrink-0">
-                            <StatusBadge status={req.status} />
-                            {currentUser.role === 'Employee' &&
-                              req.applicantId === currentUser.id &&
-                              req.status === 'Pending Dept Head Approval' &&
-                              req.deptHeadApproval === 'Pending' && (
-                              <button
-                                type="button"
-                                onClick={() => handleEditRequest(req)}
-                                className="px-3 py-1 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-xs font-semibold text-white transition-all"
-                              >
-                                Edit Request
-                              </button>
-                            )}
-                            <button 
-                              onClick={() => setSelectedRequestForModal(req)}
-                              className="px-3 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs font-semibold text-white transition-all"
-                            >
-                              Details
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => setPrintModalRequest(req)}
-                              className="px-3 py-1 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-xs font-semibold text-white transition-all"
-                            >
-                              Print Request
-                            </button>
-                          </div>
+                <div className={`grid content-start grid-cols-2 gap-3 xl:grid-cols-4 ${currentUser.role === 'Employee' && currentUser.employmentType === 'Permanent' ? '' : 'min-h-0 flex-1'}`}>
+                  {currentUser.role === 'Employee' ? (
+                    <>
+                      {currentUser.employmentType === 'Permanent' && (
+                        <div className="col-span-2 grid grid-cols-2 gap-3 xl:col-span-4 xl:grid-cols-4" aria-label="Leave credit balances">
+                          {LEAVE_CREDIT_TYPES.map(credit => (
+                            <section key={credit.key} className="min-h-[6.25rem] min-w-0 rounded-2xl border border-emerald-500/20 bg-gradient-to-br from-emerald-950/70 to-slate-950 p-3">
+                              <div className="flex items-start justify-between gap-2">
+                                <p className="text-[9px] font-bold uppercase leading-tight tracking-wide text-emerald-300">{credit.label}</p>
+                                <Icon name={credit.icon} className="h-3 w-3 shrink-0 text-emerald-300" />
+                              </div>
+                              <p className="mt-2 text-xl font-black text-white sm:text-2xl">{currentUser.leaveCredits?.[credit.key] ?? 'Not set'}</p>
+                              <p className="text-[9px] text-slate-500">days remaining</p>
+                            </section>
+                          ))}
                         </div>
-                      ))
-                    )}
-                  </div>
-                  {filteredDashboardRequests.length > 10 && (
-                    <div className="flex flex-col sm:flex-row items-center justify-between gap-3 border-t border-slate-800 pt-3">
-                      <p className="text-xs text-slate-400" aria-live="polite">
-                        Showing {(currentTransactionPage - 1) * 10 + 1}–{Math.min(currentTransactionPage * 10, filteredDashboardRequests.length)} of {filteredDashboardRequests.length} transactions
-                      </p>
-                      <div className="flex items-center gap-2">
-                        <button
-                          type="button"
-                          onClick={() => setTransactionPage(page => Math.max(1, Math.min(page, transactionPageCount) - 1))}
-                          disabled={currentTransactionPage === 1}
-                          className="px-3 py-2 rounded-lg bg-slate-800 text-white text-xs font-semibold hover:bg-slate-700 disabled:opacity-40 disabled:cursor-not-allowed"
-                        >
-                          Previous
-                        </button>
-                        <span className="text-xs text-slate-300" aria-label={`Page ${currentTransactionPage} of ${transactionPageCount}`}>
-                          Page {currentTransactionPage} of {transactionPageCount}
+                      )}
+                    </>
+                  ) : canManageLeaveCredits ? (
+                    <div className="col-span-2 grid grid-cols-2 gap-3 xl:col-span-4 xl:grid-cols-4" aria-label={`Leave credit balances for ${currentUser.name}`}>
+                      {LEAVE_CREDIT_TYPES.map(credit => (
+                        <section key={credit.key} className="min-h-[6.25rem] min-w-0 rounded-2xl border border-emerald-500/20 bg-gradient-to-br from-emerald-950/70 to-slate-950 p-3">
+                          <div className="flex items-start justify-between gap-2">
+                            <p className="text-[9px] font-bold uppercase leading-tight tracking-wide text-emerald-300">{credit.label}</p>
+                            <Icon name={credit.icon} className="h-3 w-3 shrink-0 text-emerald-300" />
+                          </div>
+                          <p className="mt-2 text-xl font-black text-white sm:text-2xl">
+                            {currentUser.leaveCredits?.[credit.key] ?? 'Not set'}
+                          </p>
+                          <p className="text-[9px] text-slate-500">days remaining</p>
+                        </section>
+                      ))}
+                      <button
+                        type="button"
+                        onClick={() => setActiveTab('leave-credits')}
+                        className="min-h-[6.25rem] min-w-0 rounded-2xl border border-violet-500/30 bg-gradient-to-br from-violet-950/70 to-slate-950 p-3 text-left hover:border-violet-400/60"
+                      >
+                        <span className="flex items-start justify-between gap-2">
+                          <span className="text-[9px] font-bold uppercase leading-tight tracking-wide text-violet-300">Leave Credits</span>
+                          <Icon name="file-text" className="h-3 w-3 shrink-0 text-violet-300" />
                         </span>
-                        <button
-                          type="button"
-                          onClick={() => setTransactionPage(page => Math.min(transactionPageCount, Math.min(page, transactionPageCount) + 1))}
-                          disabled={currentTransactionPage === transactionPageCount}
-                          className="px-3 py-2 rounded-lg bg-indigo-600 text-white text-xs font-semibold hover:bg-indigo-500 disabled:opacity-40 disabled:cursor-not-allowed"
-                        >
-                          Next
-                        </button>
-                      </div>
+                        <span className="mt-2 block text-lg font-black text-white">Manage Balances</span>
+                        <span className="block text-[9px] text-slate-500">set employee balances</span>
+                      </button>
                     </div>
+                  ) : (
+                    <>
+                      <section className="rounded-2xl border border-amber-500/20 bg-slate-950 p-4">
+                        <p className="text-[10px] font-bold uppercase tracking-wider text-amber-300">Awaiting Your Review</p>
+                        <p className="mt-2 text-2xl font-black text-white">{requestsForApproval.length}</p>
+                        <p className="text-[10px] text-slate-500">requests in your queue</p>
+                      </section>
+                    </>
                   )}
                 </div>
+
               </div>
+            )}
+
+            {activeTab === 'leave-credits' && canManageLeaveCredits && (
+              <section className="mx-auto w-full max-w-5xl space-y-4">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <div>
+                    <h2 className="text-lg font-bold text-white">Employee Leave Credits</h2>
+                    <p className="mt-1 text-xs text-slate-400">Set balances for approved Permanent employees. Leave a field blank when a balance is not set.</p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setActiveTab('dashboard')}
+                    className="rounded-lg border border-slate-700 px-3 py-2 text-xs font-semibold text-slate-300 hover:bg-slate-800"
+                  >
+                    Back to Dashboard
+                  </button>
+                </div>
+                {approvedEmployees.length === 0 ? (
+                  <div className="rounded-2xl border border-slate-800 bg-slate-950 p-6 text-center text-xs text-slate-400">
+                    No approved Permanent employee accounts are available.
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    <label className="block space-y-1">
+                      <span className="block text-[10px] font-semibold text-slate-400">Filter Permanent employees</span>
+                      <input
+                        type="search"
+                        value={leaveCreditEmployeeFilter}
+                        onChange={event => setLeaveCreditEmployeeFilter(event.target.value)}
+                        placeholder="Search name, email, or department"
+                        aria-label="Filter Permanent employees by name, email, or department"
+                        className="w-full rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-xs text-white placeholder:text-slate-500"
+                      />
+                    </label>
+                    {filteredLeaveCreditEmployees.length === 0 ? (
+                      <div className="rounded-2xl border border-slate-800 bg-slate-950 p-6 text-center text-xs text-slate-400">
+                        No Permanent employees match this filter.
+                      </div>
+                    ) : filteredLeaveCreditEmployees.map(employee => {
+                      const draft = leaveCreditDrafts[employee.id] || createLeaveCreditDraft(employee);
+                      return (
+                        <article key={employee.id} className="space-y-3 rounded-2xl border border-slate-800 bg-slate-950 p-4">
+                          <div className="min-w-0">
+                            <h3 className="truncate text-sm font-bold text-white">{employee.name}</h3>
+                            <p className="mt-1 truncate text-[10px] text-slate-400">{employee.dept || 'No department'} · {employee.employmentType || 'Employment type not set'}</p>
+                          </div>
+                          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-4">
+                            {LEAVE_CREDIT_TYPES.map(credit => (
+                              <label key={credit.key} className="space-y-1">
+                                <span className="block text-[10px] font-semibold text-slate-400">{credit.label}</span>
+                                <input
+                                  type="number"
+                                  min="0"
+                                  max="9999.99"
+                                  step="0.01"
+                                  inputMode="decimal"
+                                  value={draft[credit.key] ?? ''}
+                                  onChange={event => setLeaveCreditDrafts(current => ({
+                                    ...current,
+                                    [employee.id]: { ...draft, [credit.key]: event.target.value }
+                                  }))}
+                                  aria-label={`${employee.name} ${credit.label} balance`}
+                                  className="w-full rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-xs text-white"
+                                />
+                              </label>
+                            ))}
+                          </div>
+                          <div className="flex justify-end">
+                            <button
+                              type="button"
+                              onClick={() => saveLeaveCredits(employee)}
+                              disabled={savingLeaveCreditUser === employee.id || isUsingOfflineCache}
+                              className="rounded-lg bg-emerald-600 px-4 py-2 text-xs font-bold text-white hover:bg-emerald-500 disabled:cursor-not-allowed disabled:opacity-50"
+                            >
+                              {savingLeaveCreditUser === employee.id ? 'Saving…' : 'Save balances'}
+                            </button>
+                          </div>
+                        </article>
+                      );
+                    })}
+                  </div>
+                )}
+              </section>
             )}
 
             {activeTab === 'department-employees' && currentUser.role === 'Department Head' && currentUser.status === 'Approved' && (
@@ -4190,11 +4569,11 @@
               <>
                 <div className="space-y-1">
                   <h3 className="text-lg font-bold text-white">My Requests</h3>
-                  <p className="text-xs text-slate-400">View your archived request copies{isApprover ? ' and manage requests awaiting your approval.' : '.'}</p>
+                  <p className="text-xs text-slate-400">View your saved request copies{isApprover ? ' and manage requests awaiting your approval.' : '.'}</p>
                 </div>
                 <div className="bg-slate-950 rounded-2xl border border-slate-800 p-4 sm:p-5 space-y-4">
                 <h3 className="font-bold text-white text-base">Personal Archive</h3>
-                <p className="text-xs text-slate-400">Copies of approved or declined requests assigned to your account for reference and printing.</p>
+                <p className="text-xs text-slate-400">Copies of requests submitted from your account for reference and printing.</p>
                 
                 <div className="divide-y divide-slate-800">
                   {myArchivedCopies.length === 0 ? (
@@ -4206,7 +4585,7 @@
                       <div key={arc.id} className="py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
                         <div className="min-w-0">
                           <div className="font-bold text-indigo-400">{arc.originalReqId} — {arc.type}</div>
-                          <div className="text-slate-400 mt-0.5 break-words">Archived: {arc.archivedDate} • Reason: {arc.reason}</div>
+                          <div className="text-slate-400 mt-0.5 break-words">Saved: {arc.archivedDate} • Reason: {arc.reason}</div>
                         </div>
                         <div className="flex flex-wrap items-center gap-2">
                           <StatusBadge status={arc.status} />
@@ -4461,7 +4840,7 @@
                           <div>
                             <label className="text-slate-300 block mb-1">6.C Number of working days</label>
                             <input
-                              type="number" min="1" step="1" required value={formData.totalDays}
+                              type="number" min="0.5" step="0.5" required value={formData.totalDays}
                               onChange={e => setFormData(prev => ({ ...prev, totalDays: e.target.value }))}
                               className="w-full bg-slate-950 border border-slate-800 rounded-lg px-2.5 py-2 text-white"
                             />
@@ -5507,6 +5886,85 @@
                   ))}
                 </div>
 
+                {printModalRequest.type === 'Leave' &&
+                  printModalRequest.leaveDetails?.formVariant !== 'COS' && (
+                  <div className="print-csc-form text-xs space-y-3">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div className="rounded-lg border border-slate-300 p-3">
+                        <div className="font-bold uppercase mb-2">6.A Type of leave</div>
+                        <div className="font-semibold">
+                          {printModalRequest.leaveDetails?.leaveType === 'Others'
+                            ? printModalRequest.leaveDetails?.leaveTypeOther || 'Others'
+                            : printModalRequest.leaveDetails?.leaveType || printModalRequest.subType}
+                        </div>
+                      </div>
+                      <div className="rounded-lg border border-slate-300 p-3">
+                        <div className="font-bold uppercase mb-2">6.B Details of leave</div>
+                        {(() => {
+                          const leaveDetails = printModalRequest.leaveDetails || {};
+                          const leaveType = leaveDetails.leaveType || printModalRequest.subType;
+                          const details = [];
+                          if (['Vacation Leave', 'Special Privilege Leave'].includes(leaveType) && leaveDetails.locationType) {
+                            details.push(`${leaveDetails.locationType}: ${leaveDetails.destination || '—'}`);
+                          }
+                          if (leaveType === 'Sick Leave' && leaveDetails.sickTreatment) {
+                            details.push(`${leaveDetails.sickTreatment}: ${leaveDetails.illness || '—'}`);
+                          }
+                          if (leaveType === 'Special Leave Benefits for Women' && leaveDetails.illness) {
+                            details.push(`Illness: ${leaveDetails.illness}`);
+                          }
+                          if (leaveType === 'Study Leave' && leaveDetails.studyPurposes?.length) {
+                            details.push(leaveDetails.studyPurposes.join(', '));
+                          }
+                          if (['Study Leave', 'Others'].includes(leaveType) && leaveDetails.otherPurpose) {
+                            details.push(leaveDetails.otherPurpose);
+                          }
+                          return details.length
+                            ? details.map((detail, index) => <div key={`${index}-${detail}`}>{detail}</div>)
+                            : <div>—</div>;
+                        })()}
+                      </div>
+                      <div className="rounded-lg border border-slate-300 p-3">
+                        <div className="font-bold uppercase mb-2">6.C Number of working days</div>
+                        <div className="font-semibold">{printModalRequest.totalDays || '—'} working day(s)</div>
+                        <div className="mt-1 text-slate-600">
+                          Inclusive dates: {formatInclusiveMonthDates(printModalRequest.startDate, printModalRequest.endDate) || '—'}
+                        </div>
+                      </div>
+                      <div className="rounded-lg border border-slate-300 p-3">
+                        <div className="font-bold uppercase mb-2">6.D Commutation</div>
+                        <div className="font-semibold">{printModalRequest.leaveDetails?.commutation || 'Not specified'}</div>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div className="rounded-lg border border-slate-300 p-3">
+                        <div className="font-bold uppercase mb-2">7.A Certification of leave credits</div>
+                        <div className="text-slate-600">To be certified by the Authorized Officer.</div>
+                      </div>
+                      <div className="rounded-lg border border-slate-300 p-3">
+                        <div className="font-bold uppercase mb-2">7.B Recommendation</div>
+                        {(() => {
+                          const departmentHeadStatus = getReviewStatus(printModalRequest, 'Department Head');
+                          const recommendation = departmentHeadStatus === 'Approved'
+                            ? 'For approval'
+                            : departmentHeadStatus === 'Rejected'
+                              ? 'For disapproval'
+                              : 'Pending';
+                          return (
+                            <div>
+                              <div className="font-semibold">{recommendation}</div>
+                              {departmentHeadStatus === 'Rejected' && printModalRequest.reason && (
+                                <div className="mt-1 text-slate-600">Reason: {printModalRequest.reason}</div>
+                              )}
+                            </div>
+                          );
+                        })()}
+                      </div>
+                    </div>
+                  </div>
+                )}
+
                 {(printModalRequest.type !== 'Leave' || printModalRequest.leaveDetails?.formVariant === 'COS') && (
                   <div className="print-form-purpose space-y-2 text-xs">
                     <div className="font-bold">{printModalRequest.type === 'Leave' ? 'Purpose of Leave' : 'Reason / Justification'}</div>
@@ -5561,6 +6019,16 @@
                 </div>
 
                 <div id="print-form-actions" className="flex justify-end space-x-2 pt-2">
+                  {printModalRequest.type === 'Leave' &&
+                    printModalRequest.leaveDetails?.formVariant !== 'COS' && (
+                    <button
+                      type="button"
+                      onClick={() => openCSCLeaveForm(printModalRequest)}
+                      className="px-4 py-2 bg-sky-700 text-white font-bold text-xs rounded-xl"
+                    >
+                      Open CSC Form No. 6
+                    </button>
+                  )}
                   <button
                     type="button"
                     onClick={() => window.print()}
@@ -5655,7 +6123,17 @@
               )}
               <div className="flex gap-2 mt-3">
                 {isAndroid && (
-                  <a href="/download-app" className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs rounded-lg">Download APK</a>
+                  <a
+                    href="/download-app"
+                    onClick={event => {
+                      if (!window.confirm('Download the APK now? Android will ask separately before installing it.')) {
+                        event.preventDefault();
+                      }
+                    }}
+                    className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs rounded-lg"
+                  >
+                    Download APK
+                  </a>
                 )}
                 {deferred && (
                   <button onClick={install} className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs rounded-lg">Install web app</button>

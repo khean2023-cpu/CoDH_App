@@ -2,10 +2,17 @@ import type { Collection } from "../db/index.js";
 import { createHash, randomBytes, scryptSync, timingSafeEqual } from "node:crypto";
 import { deleteStoredBlob, getStoredBlob, setStoredBlob } from "../db/blob-storage.js";
 import { getDatabase } from "../db/index.js";
-import { canAccessRequest, createApprovalUpdate, isHumanResourceReviewer } from "./authorization.js";
+import {
+  canAccessRequest,
+  canManageLeaveCredits,
+  createApprovalUpdate,
+  isHumanResourceReviewer,
+} from "./authorization.js";
+import { LEAVE_CREDIT_KEYS } from "../db/schema.js";
 import type {
   ArchiveDocument,
   AttachmentDocument,
+  LeaveCreditKey,
   NotificationDocument,
   ProfileMediaDocument,
   RequestDocument,
@@ -36,15 +43,33 @@ const publicUser = (user: UserDocument, viewer?: UserDocument) => {
     createdAt,
     salary,
     salaryHistory,
+    leaveCredits,
     signature,
     requestedRole,
     requestedDept,
     requestedEmploymentType,
     ...rest
   } = user;
+  const canViewLeaveCredits =
+    (viewer?.id === user.id &&
+      user.role === "Employee" &&
+      user.status === "Approved" &&
+      user.employmentType === "Permanent") ||
+    (viewer !== undefined && canManageLeaveCredits(viewer));
+  const safeLeaveCredits = canViewLeaveCredits && leaveCredits ? { leaveCredits } : {};
   if (viewer && (viewer.role === "Admin" || viewer.id === user.id)) {
-    return { ...rest, salary, salaryHistory, signature, requestedRole, requestedDept, requestedEmploymentType };
+    return {
+      ...rest,
+      salary,
+      salaryHistory,
+      ...(viewer.role === "Admin" ? {} : safeLeaveCredits),
+      signature,
+      requestedRole,
+      requestedDept,
+      requestedEmploymentType,
+    };
   }
+  if (viewer && canManageLeaveCredits(viewer)) return { ...rest, ...safeLeaveCredits };
   return rest;
 };
 
@@ -71,6 +96,23 @@ const VALID_REGISTRATION_ROLES = new Set([...VALID_USER_ROLES].filter(role => ro
 const VALID_EMPLOYMENT_TYPES = new Set(["Contract of Service", "Permanent"]);
 const VALID_USER_STATUSES = new Set<string>(["Pending", "Approved", "Deactivated"]);
 const sessionHash = (token: string) => createHash("sha256").update(token).digest("hex");
+const isValidLeaveCredit = (credit: unknown): credit is number =>
+  typeof credit === "number" &&
+  Number.isFinite(credit) &&
+  credit >= 0 &&
+  credit <= 9999.99 &&
+  Math.abs(credit * 100 - Math.round(credit * 100)) < 1e-8;
+const isValidLeaveCreditRecord = (
+  value: unknown,
+): value is Partial<Record<LeaveCreditKey, number | null>> => {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return false;
+  const credits = value as Record<string, unknown>;
+  const keys = Object.keys(credits);
+  return keys.length > 0 && keys.every(key =>
+    LEAVE_CREDIT_KEYS.some(creditKey => creditKey === key) &&
+    (credits[key] === null || isValidLeaveCredit(credits[key]))
+  );
+};
 
 const requestSessionToken = (req: Request) => {
   const cookies = req.headers.get("cookie");
@@ -672,10 +714,52 @@ export const handleApi = async (req: Request, apiPath?: string) => {
     if (resource === "users") {
       if (id && method === "PUT") {
         if (actor.role !== "Admin" && id !== actor.id) {
-          return error("You cannot update another user's account.", 403);
+          if (!canManageLeaveCredits(actor) || Object.keys(body).length !== 1 || !("leaveCredits" in body)) {
+            return error("You cannot update another user's account.", 403);
+          }
         }
         const user = await users.findOne({ id });
         if (!user) return error("User not found.", 404);
+        if ("leaveCredits" in body) {
+          if (Object.keys(body).length !== 1) {
+            return error("Leave credits must be updated separately from other account fields.");
+          }
+          if (!canManageLeaveCredits(actor)) {
+            return error("Only an approved Human Resource account can update leave credits.", 403);
+          }
+          if (user.role !== "Employee" || user.status !== "Approved" || user.employmentType !== "Permanent") {
+            return error("Leave credits can only be assigned to approved Permanent employee accounts.");
+          }
+          const value = body.leaveCredits;
+          if (!value || typeof value !== "object" || Array.isArray(value)) {
+            return error("Enter valid leave credits for all categories.");
+          }
+          if (!isValidLeaveCreditRecord(value)) {
+            return error("Each leave balance must be blank or a non-negative number with up to two decimal places.");
+          }
+          const leaveCredits: Partial<Record<LeaveCreditKey, number | null>> = {};
+          for (const key of LEAVE_CREDIT_KEYS) {
+            leaveCredits[key] = Object.prototype.hasOwnProperty.call(value, key)
+              ? value[key] ?? null
+              : user.leaveCredits?.[key] ?? null;
+          }
+
+          await users.updateOne(
+            { id },
+            {
+              $set: {
+                leaveCredits: {
+                  ...leaveCredits,
+                  updatedAt: new Date().toISOString(),
+                  updatedBy: actor.id,
+                },
+              },
+            },
+          );
+          const updated = await users.findOne({ id });
+          if (!updated) return error("User not found.", 404);
+          return json(publicUser(updated, actor));
+        }
         if ("avatar" in body && !await isOwnedProfileMedia(body.avatar, id, "avatar", profileMedia)) {
           return error("Select a valid profile image.", 400);
         }
@@ -835,12 +919,41 @@ export const handleApi = async (req: Request, apiPath?: string) => {
           type: values.type,
           createdAt: new Date(),
         };
+        const archiveCopy: ArchiveDocument = {
+          id: `ARCH-${Date.now()}-${randomBytes(3).toString("hex")}`,
+          originalReqId: created.id,
+          applicantId: actor.id,
+          recipientId: actor.id,
+          applicantName: created.applicantName,
+          type: created.type,
+          section: created.section,
+          status: created.status,
+          archivedDate: created.dateFiled || "",
+          reason: created.reason,
+          createdAt: new Date(),
+        };
         await requests.insertOne(created);
-        if (created.attachmentId) {
-          await attachments.updateOne({ id: created.attachmentId }, { $set: { requestId: created.id } });
+        try {
+          await archives.insertOne(archiveCopy);
+          if (created.attachmentId) {
+            await attachments.updateOne({ id: created.attachmentId }, { $set: { requestId: created.id } });
+          }
+        } catch (err) {
+          const rollbacks = await Promise.allSettled([
+            requests.deleteOne({ id: created.id }),
+            archives.deleteOne({ id: archiveCopy.id }),
+            ...(created.attachmentId
+              ? [attachments.updateOne({ id: created.attachmentId }, { $set: { requestId: null } })]
+              : []),
+          ]);
+          if (rollbacks.some(result => result.status === "rejected")) {
+            console.error("Could not fully roll back request creation after archive-copy failure.", rollbacks);
+          }
+          throw err;
         }
-        const { createdAt, ...rest } = created;
-        return json(rest, 201);
+        const { createdAt: requestCreatedAt, ...requestResponse } = created;
+        const { createdAt: archiveCreatedAt, ...archiveResponse } = archiveCopy;
+        return json({ request: requestResponse, archiveCopy: archiveResponse }, 201);
       }
 
       if (id && method === "PUT") {
@@ -960,21 +1073,27 @@ export const handleApi = async (req: Request, apiPath?: string) => {
         originalReqId: request.id,
         recipientId: String(recipientId),
       });
-      if (existing) {
-        const { createdAt, ...rest } = existing;
-        return json(rest);
-      }
-      const created: ArchiveDocument = {
-        id: `ARCH-${Date.now()}-${randomBytes(3).toString("hex")}`,
-        originalReqId: request.id,
+      const archiveFields = {
         applicantId: request.applicantId,
         recipientId: String(recipientId),
         applicantName: request.applicantName,
         type: request.type,
         section: request.section,
         status: request.status,
-        archivedDate: String(archivedDate || request.approvalDate || request.dateFiled || ""),
+        archivedDate: String(request.approvalDate || archivedDate || request.dateFiled || ""),
         reason: request.reason,
+      };
+      if (existing) {
+        await archives.updateOne({ id: existing.id }, { $set: archiveFields });
+        const updated = await archives.findOne({ id: existing.id });
+        if (!updated) return error("The archive copy could not be updated.", 500);
+        const { createdAt, ...rest } = updated;
+        return json(rest);
+      }
+      const created: ArchiveDocument = {
+        id: `ARCH-${Date.now()}-${randomBytes(3).toString("hex")}`,
+        originalReqId: request.id,
+        ...archiveFields,
         createdAt: new Date(),
       };
       await archives.insertOne(created);

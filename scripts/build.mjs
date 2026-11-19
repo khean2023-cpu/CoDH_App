@@ -25,6 +25,10 @@ for (const file of ["manifest.webmanifest", "sw.js"]) {
   copyFileSync(resolve(root, file), resolve(output, file));
 }
 
+for (const file of ["leaveform1.html", "leaveform2.html", "palawan-seal.jpg"]) {
+  copyFileSync(resolve(root, file), resolve(output, file));
+}
+
 cpSync(resolve(root, "icons"), resolve(output, "icons"), { recursive: true });
 
 console.log("Built static app into dist/.");
