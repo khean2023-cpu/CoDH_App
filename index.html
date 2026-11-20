@@ -11,7 +11,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="CoDH App">
   <meta name="application-name" content="CoDH App">
-  <meta name="app-version" content="1.3">
+  <meta name="app-version" content="1.4">
   <script>
     (() => {
       document.documentElement.classList.add('app-launching');
@@ -4084,7 +4084,7 @@
                                   </p>
                                   <p className="whitespace-pre-wrap break-words text-xs leading-relaxed">{message.message}</p>
                                 </div>
-                                {canUnsend && (
+                                {canUnsend && timestampVisible && (
                                   <button
                                     type="button"
                                     aria-label={`Unsend ${senderFirstName}'s message`}
