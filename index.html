@@ -3816,6 +3816,127 @@
             </div>
           )}
 
+          {isAuthenticated && currentUser && (
+            <>
+              <button
+                type="button"
+                aria-label={isPublicChatOpen ? 'Close public chat' : 'Open public chat'}
+                aria-expanded={isPublicChatOpen}
+                title="Drag to move or click to open public chat"
+                onPointerDown={handlePublicChatPointerDown}
+                onPointerMove={handlePublicChatPointerMove}
+                onPointerUp={handlePublicChatPointerUp}
+                onPointerCancel={handlePublicChatPointerCancel}
+                onClick={handlePublicChatToggle}
+                className="fixed z-[35] flex h-14 w-14 touch-none cursor-grab items-center justify-center rounded-full border border-indigo-300/30 bg-indigo-600 text-white shadow-xl shadow-indigo-950/50 transition-colors hover:bg-indigo-500 active:cursor-grabbing"
+                style={{ right: publicChatPosition.right, bottom: publicChatPosition.bottom }}
+              >
+                <Icon name="message-circle" className="h-6 w-6" />
+                <span className="sr-only">Public chat</span>
+              </button>
+
+              {isPublicChatOpen && (
+                <section
+                  role="dialog"
+                  aria-modal="false"
+                  aria-label="Public chat"
+                  className="fixed z-[35] flex flex-col overflow-hidden rounded-2xl border border-slate-700 bg-slate-900 shadow-2xl shadow-black/50"
+                  style={{
+                    right: Math.min(publicChatPosition.right, Math.max(12, window.innerWidth - 344)),
+                    bottom: Math.min(publicChatPosition.bottom + 68, Math.max(12, window.innerHeight - 440)),
+                    width: 'min(20rem, calc(100vw - 1.5rem))',
+                    height: 'min(28rem, calc(100dvh - 1.5rem))'
+                  }}
+                >
+                  <header className="flex shrink-0 items-center justify-between gap-3 border-b border-slate-700 bg-slate-950/80 px-4 py-3">
+                    <div className="flex min-w-0 items-center gap-2">
+                      <span className={`h-2.5 w-2.5 shrink-0 rounded-full ${hasLiveConnection ? 'bg-emerald-400' : 'bg-amber-400'}`} />
+                      <div className="min-w-0">
+                        <h2 className="text-sm font-bold text-white">Public chat</h2>
+                        <p className="truncate text-[10px] text-slate-400">
+                          {hasLiveConnection ? 'Shared with everyone signed in' : 'Connection unavailable'}
+                        </p>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setIsPublicChatOpen(false)}
+                      aria-label="Close public chat"
+                      className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-slate-400 hover:bg-slate-800 hover:text-white"
+                    >
+                      <Icon name="x" className="h-4 w-4" />
+                    </button>
+                  </header>
+
+                  <div
+                    ref={publicChatScrollRef}
+                    aria-label="Public chat messages"
+                    aria-live="polite"
+                    className="min-h-0 flex-1 space-y-3 overflow-y-auto bg-slate-950/40 p-3"
+                  >
+                    {publicChatError && (
+                      <p role="status" className="rounded-lg border border-amber-500/30 bg-amber-500/10 px-2.5 py-2 text-[10px] text-amber-200">
+                        {publicChatError}
+                      </p>
+                    )}
+                    {publicChatLoading && publicChatMessages.length === 0 ? (
+                      <p className="py-6 text-center text-xs text-slate-400">Loading public chat…</p>
+                    ) : publicChatMessages.length === 0 ? (
+                      <p className="py-6 text-center text-xs text-slate-400">No messages yet. Start the conversation.</p>
+                    ) : (
+                      publicChatMessages.map(message => {
+                        const isOwnMessage = message.senderId === currentUser.id;
+                        return (
+                          <div key={message.id} className={`flex ${isOwnMessage ? 'justify-end' : 'justify-start'}`}>
+                            <div className={`max-w-[88%] rounded-2xl px-3 py-2 ${
+                              isOwnMessage
+                                ? 'rounded-br-md bg-indigo-600/90 text-white'
+                                : 'rounded-bl-md border border-slate-700 bg-slate-800 text-slate-100'
+                            }`}>
+                              <p className={`mb-1 text-[9px] font-bold ${isOwnMessage ? 'text-indigo-100' : 'text-sky-300'}`}>
+                                {isOwnMessage ? 'You' : `${message.senderName} · ${message.senderRole}`}
+                              </p>
+                              <p className="whitespace-pre-wrap break-words text-xs leading-relaxed">{message.message}</p>
+                              <time
+                                dateTime={message.createdAt}
+                                className={`mt-1 block text-right text-[9px] ${isOwnMessage ? 'text-indigo-200' : 'text-slate-400'}`}
+                              >
+                                {new Date(message.createdAt).toLocaleTimeString('en-PH', { hour: 'numeric', minute: '2-digit' })}
+                              </time>
+                            </div>
+                          </div>
+                        );
+                      })
+                    )}
+                  </div>
+
+                  <form onSubmit={handlePublicChatSubmit} className="flex shrink-0 items-end gap-2 border-t border-slate-700 bg-slate-950/80 p-3">
+                    <div className="min-w-0 flex-1">
+                      <label htmlFor="public-chat-message" className="sr-only">Message to public chat</label>
+                      <textarea
+                        id="public-chat-message"
+                        value={publicChatDraft}
+                        onChange={event => setPublicChatDraft(event.target.value)}
+                        maxLength={500}
+                        rows={2}
+                        placeholder="Write a public message…"
+                        className="max-h-24 min-h-10 w-full resize-none rounded-xl border border-slate-700 bg-slate-900 px-3 py-2 text-xs text-white placeholder:text-slate-500 focus:border-indigo-400 focus:outline-none"
+                      />
+                    </div>
+                    <button
+                      type="submit"
+                      disabled={!publicChatDraft.trim() || sendingPublicChatMessage || !isOnline || isApiUnavailable}
+                      aria-label="Send public message"
+                      className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-indigo-600 text-white transition-colors hover:bg-indigo-500 disabled:cursor-not-allowed disabled:opacity-40"
+                    >
+                      <Icon name="send" className="h-4 w-4" />
+                    </button>
+                  </form>
+                </section>
+              )}
+            </>
+          )}
+
           {/* SIDEBAR */}
           <aside className="w-full lg:w-72 lg:shrink-0 sticky top-0 z-20 lg:h-screen lg:overflow-y-auto bg-slate-950/95 backdrop-blur-sm border-b lg:border-b-0 lg:border-r border-slate-800 flex flex-col">
             <div className="p-5 sm:p-6 border-b border-slate-800 flex items-center justify-between">
