@@ -3,3 +3,4 @@ node_modules
 local-demo-data.json
 local-demo-blobs/
 dist/
+.env*
