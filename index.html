@@ -3371,46 +3371,89 @@
         }
       }, [userUnreadNotifs.length]);
 
-      useEffect(() => {
-        if (!dataLoaded || !currentUser) return;
-        const ids = new Set(userNotifs.map(notification => notification.id));
-        const previous = deviceNotificationSnapshot.current;
-        if (previous.userId !== currentUser.id) {
-          deviceNotificationSnapshot.current = { userId: currentUser.id, ids, unreadCount: userUnreadNotifs.length };
-          return;
-        }
-        const newlyUnread = userUnreadNotifs.filter(notification => !previous.ids.has(notification.id));
-        const unreadCountChanged = previous.unreadCount !== userUnreadNotifs.length;
-        deviceNotificationSnapshot.current = { userId: currentUser.id, ids, unreadCount: userUnreadNotifs.length };
-        if (!deviceNotificationsEnabled || (newlyUnread.length === 0 && !unreadCountChanged)) return;
+      const localNotificationId = value => {
+        let hash = 0;
+        for (const character of value) hash = (hash * 31 + character.charCodeAt(0)) | 0;
+        return (hash & 0x7fffffff) || 1;
+      };
 
+      const showDeviceNotification = async (title, body, tag, url) => {
+        const safeTitle = String(title || 'CoDH App');
+        const safeBody = String(body || '').slice(0, 240);
         const localNotifications = window.Capacitor?.Plugins?.LocalNotifications;
         if (localNotifications?.schedule) {
-          if (userUnreadNotifs.length === 0) {
-            localNotifications.cancel({ notifications: [{ id: 6136 }] })
-              .catch(err => console.error('Could not clear the device notification:', err));
-          } else {
-            localNotifications.schedule({
-              notifications: [{
-                id: 6136,
-                title: `${userUnreadNotifs.length} unread CoDH notification${userUnreadNotifs.length === 1 ? '' : 's'}`,
-                body: (newlyUnread[0] || userUnreadNotifs[0]).title,
-                schedule: { at: new Date(Date.now() + 1000) },
-                group: 'codh-notifications',
-                groupSummary: true,
-                autoCancel: false
-              }]
-            }).catch(err => {
-              console.error('Could not show a device notification:', err);
-              triggerToast(`Could not show a device notification: ${err.message}`, 'error');
-            });
-          }
-        } else if (newlyUnread.length && 'Notification' in window && Notification.permission === 'granted') {
-          new Notification(`${userUnreadNotifs.length} unread CoDH notification${userUnreadNotifs.length === 1 ? '' : 's'}`, {
-            body: newlyUnread[0].title
+          await localNotifications.schedule({
+            notifications: [{
+              id: localNotificationId(tag),
+              title: safeTitle,
+              body: safeBody,
+              schedule: { at: new Date(Date.now() + 500) },
+              group: 'codh-notifications',
+              groupSummary: false,
+              autoCancel: true,
+              extra: { url }
+            }]
           });
+          return;
         }
-      }, [dataLoaded, currentUser?.id, userNotifs, userUnreadNotifs, deviceNotificationsEnabled]);
+
+        if (!('Notification' in window) || Notification.permission !== 'granted') {
+          throw new Error('Notification permission is not available.');
+        }
+        const options = {
+          body: safeBody,
+          icon: '/icons/icon-192.png',
+          badge: '/icons/icon-192.png',
+          tag,
+          data: { url }
+        };
+        let registration;
+        if ('serviceWorker' in navigator) {
+          try {
+            registration = await navigator.serviceWorker.getRegistration();
+          } catch (error) {
+            console.warn('Could not access the service worker for notifications:', error);
+          }
+        }
+        if (registration?.showNotification) {
+          await registration.showNotification(safeTitle, options);
+          return;
+        }
+
+        const notification = new Notification(safeTitle, options);
+        notification.onclick = () => {
+          window.focus();
+          window.location.assign(url);
+        };
+      };
+
+      useEffect(() => {
+        if (!dataLoaded || !currentUser) {
+          deviceNotificationSnapshot.current = { userId: null, unreadIds: new Set() };
+          return;
+        }
+        const unreadIds = new Set(userUnreadNotifs.map(notification => notification.id));
+        const previous = deviceNotificationSnapshot.current;
+        if (previous.userId !== currentUser.id) {
+          deviceNotificationSnapshot.current = { userId: currentUser.id, unreadIds };
+          return;
+        }
+        const newlyUnread = userUnreadNotifs.filter(notification => !previous.unreadIds.has(notification.id));
+        deviceNotificationSnapshot.current = { userId: currentUser.id, unreadIds };
+        if (!deviceNotificationsEnabled || newlyUnread.length === 0) return;
+
+        Promise.all(newlyUnread.map(notification =>
+          showDeviceNotification(
+            notification.title || 'New CoDH request update',
+            notification.message || 'Open the app to view your request update.',
+            `request-${notification.id}`,
+            '/?openNotifications=1',
+          )
+        )).catch(error => {
+          console.error('Could not show a request notification:', error);
+          triggerToast(`Could not show a request notification: ${error.message}`, 'error');
+        });
+      }, [dataLoaded, currentUser?.id, userUnreadNotifs, deviceNotificationsEnabled]);
 
       if (authChecking) {
         return (
