@@ -352,6 +352,7 @@ const server = createServer(async (req, res) => {
           senderId: sender.id,
           senderName: sender.name,
           senderRole: sender.role,
+          senderAvatar: sender.avatar || null,
           message,
           createdAt: new Date().toISOString(),
         };
@@ -361,6 +362,23 @@ const server = createServer(async (req, res) => {
         }
         saveState();
         return json(res, created, 201);
+      }
+
+      if (resource === "public-chat" && id && req.method === "DELETE") {
+        const body = JSON.parse((await readBody(req)).toString("utf8") || "{}");
+        const sender = state.users.find(user =>
+          user.id === String(body.userId || "") && user.status === "Approved",
+        );
+        if (!sender) return fail(res, "Sign in with an approved account to use public chat.", 401);
+        const messageIndex = state.publicChatMessages.findIndex(message => message.id === id);
+        if (messageIndex < 0) return fail(res, "Public chat message not found.", 404);
+        const message = state.publicChatMessages[messageIndex];
+        if (message.senderId !== sender.id && sender.role !== "Admin") {
+          return fail(res, "You can only unsend your own messages.", 403);
+        }
+        state.publicChatMessages.splice(messageIndex, 1);
+        saveState();
+        return json(res, { ok: true });
       }
 
       if (resource === "session" && req.method === "GET") {

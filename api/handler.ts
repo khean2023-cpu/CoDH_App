@@ -752,11 +752,22 @@ export const handleApi = async (req: Request, apiPath?: string) => {
           senderId: actor.id,
           senderName: actor.name,
           senderRole: actor.role,
+          senderAvatar: actor.avatar || null,
           message,
           createdAt: new Date(),
         };
         await publicChatMessages.insertOne(created);
         return json(created, 201);
+      }
+
+      if (method === "DELETE" && id) {
+        const message = await publicChatMessages.findOne({ id });
+        if (!message) return error("Public chat message not found.", 404);
+        if (message.senderId !== actor.id && actor.role !== "Admin") {
+          return error("You can only unsend your own messages.", 403);
+        }
+        await publicChatMessages.deleteOne({ id });
+        return json({ ok: true });
       }
     }
 

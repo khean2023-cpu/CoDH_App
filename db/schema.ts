@@ -160,6 +160,7 @@ export interface PublicChatMessageDocument {
   senderId: string;
   senderName: string;
   senderRole: string;
+  senderAvatar?: string | null;
   message: string;
   createdAt: Date;
 }

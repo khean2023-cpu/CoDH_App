@@ -118,7 +118,7 @@ const definitions: Record<CollectionName, CollectionDefinition> = {
   },
   publicChatMessages: {
     table: "public_chat_messages",
-    columns: ["id", "senderId", "senderName", "senderRole", "message", "createdAt"],
+    columns: ["id", "senderId", "senderName", "senderRole", "senderAvatar", "message", "createdAt"],
     jsonColumns: [],
     dateColumns: ["createdAt"],
   },
@@ -255,9 +255,11 @@ const schemaStatements = [
     sender_id TEXT NOT NULL,
     sender_name TEXT NOT NULL,
     sender_role TEXT NOT NULL,
+    sender_avatar TEXT,
     message TEXT NOT NULL,
     created_at TIMESTAMPTZ NOT NULL DEFAULT now()
   )`,
+  "ALTER TABLE public_chat_messages ADD COLUMN IF NOT EXISTS sender_avatar TEXT",
   "CREATE INDEX IF NOT EXISTS requests_applicant_idx ON requests (applicant_id)",
   "CREATE INDEX IF NOT EXISTS notifications_user_idx ON notifications (user_id)",
   "CREATE INDEX IF NOT EXISTS attachments_request_idx ON attachments (request_id)",
