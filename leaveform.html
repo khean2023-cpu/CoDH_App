@@ -1,0 +1,766 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CS Form No. 6 (Revised 2020) - Application for Leave</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: Arial, Helvetica, sans-serif;
+      font-size: 9pt;
+      color: #000;
+      background-color: #e5e7eb;
+      padding: 20px;
+    }
+
+    /* Page Container for Front & Back Sheets */
+    .sheet {
+      width: 8.5in;
+      min-height: 11in;
+      background: #fff;
+      margin: 0 auto 24px auto;
+      padding: 0.35in 0.4in;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+      position: relative;
+    }
+
+    /* Form Header */
+    .form-meta {
+      font-size: 7.5pt;
+      font-style: italic;
+      margin-bottom: 4px;
+    }
+
+    .header-block {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      text-align: center;
+      margin-bottom: 8px;
+    }
+
+    .logo-placeholder {
+      position: absolute;
+      left: 20px;
+      width: 58px;
+      height: 58px;
+      border: 1px dashed #888;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 6.5pt;
+      color: #555;
+      text-align: center;
+    }
+
+    .agency-header p {
+      font-size: 8.5pt;
+      line-height: 1.25;
+    }
+
+    .agency-header h1 {
+      font-size: 10pt;
+      font-weight: bold;
+      letter-spacing: 0.3px;
+    }
+
+    .form-title {
+      text-align: center;
+      font-size: 13pt;
+      font-weight: bold;
+      letter-spacing: 1px;
+      margin: 6px 0 8px 0;
+    }
+
+    /* Main Form Grid */
+    table.form-table {
+      width: 100%;
+      border-collapse: collapse;
+      border: 1.5px solid #000;
+    }
+
+    table.form-table td,
+    table.form-table th {
+      border: 1px solid #000;
+      padding: 4px 6px;
+      vertical-align: top;
+      font-size: 8.2pt;
+    }
+
+    .section-banner {
+      text-align: center;
+      font-weight: bold;
+      font-size: 9pt;
+      background-color: #f3f4f6;
+      letter-spacing: 0.5px;
+      padding: 3px !important;
+    }
+
+    .sub-header {
+      font-weight: bold;
+      font-size: 8.3pt;
+      margin-bottom: 5px;
+      display: block;
+    }
+
+    /* Fillable Inputs */
+    input[type="text"],
+    input[type="date"],
+    input[type="number"],
+    textarea {
+      border: none;
+      border-bottom: 1px solid #000;
+      font-family: inherit;
+      font-size: 8.2pt;
+      background: transparent;
+      outline: none;
+      padding: 1px 3px;
+    }
+
+    input[type="text"]:focus,
+    input[type="date"]:focus,
+    input[type="number"]:focus,
+    textarea:focus {
+      background-color: #fef9c3;
+    }
+
+    .full-input {
+      width: 100%;
+      margin-top: 3px;
+    }
+
+    .inline-input {
+      width: 55%;
+    }
+
+    .short-input {
+      width: 90px;
+    }
+
+    .name-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 8px;
+      margin-top: 2px;
+    }
+
+    .name-grid div {
+      text-align: center;
+      font-size: 7.5pt;
+    }
+
+    .name-grid input {
+      width: 100%;
+      text-align: center;
+      font-weight: bold;
+    }
+
+    /* Checkbox Lists */
+    .checkbox-list {
+      list-style: none;
+    }
+
+    .checkbox-list li {
+      display: flex;
+      align-items: flex-start;
+      gap: 6px;
+      margin-bottom: 4.5px;
+      line-height: 1.25;
+      font-size: 7.8pt;
+    }
+
+    .checkbox-list input[type="checkbox"] {
+      margin-top: 1px;
+      width: 12px;
+      height: 12px;
+      flex-shrink: 0;
+    }
+
+    .leave-type-title {
+      font-weight: bold;
+    }
+
+    .legal-ref {
+      font-size: 7pt;
+      color: #222;
+    }
+
+    .detail-group {
+      margin-bottom: 7px;
+    }
+
+    .detail-group-title {
+      font-style: italic;
+      font-size: 7.8pt;
+      margin-bottom: 3px;
+      display: block;
+    }
+
+    /* Inner Table for Section 7.A Leave Credits */
+    table.credits-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 6px;
+    }
+
+    table.credits-table th,
+    table.credits-table td {
+      border: 1px solid #000;
+      padding: 3px 5px;
+      font-size: 7.8pt;
+      text-align: center;
+    }
+
+    table.credits-table td:first-child {
+      text-align: left;
+    }
+
+    table.credits-table input {
+      width: 100%;
+      border-bottom: none;
+      text-align: center;
+    }
+
+    /* Signature Blocks */
+    .sig-box {
+      margin-top: 22px;
+      text-align: center;
+    }
+
+    .sig-line {
+      border-top: 1px solid #000;
+      width: 85%;
+      margin: 0 auto;
+      padding-top: 2px;
+      font-size: 7.8pt;
+    }
+
+    .official-name {
+      font-weight: bold;
+      font-size: 8.5pt;
+      text-transform: uppercase;
+    }
+
+    .official-title {
+      font-size: 7.5pt;
+    }
+
+    /* Sheet 2 (Back Page) Styles */
+    .instructions-box {
+      border: 1.5px solid #000;
+      padding: 14px 18px;
+      min-height: 9.8in;
+    }
+
+    .instructions-title {
+      text-align: center;
+      font-size: 10pt;
+      font-weight: bold;
+      text-transform: uppercase;
+      border-bottom: 1px solid #000;
+      padding-bottom: 6px;
+      margin-bottom: 10px;
+    }
+
+    .instructions-intro {
+      font-size: 8.2pt;
+      margin-bottom: 10px;
+      line-height: 1.35;
+    }
+
+    .instructions-columns {
+      column-count: 2;
+      column-gap: 22px;
+      font-size: 7.8pt;
+      line-height: 1.35;
+    }
+
+    .leave-guide-item {
+      break-inside: avoid;
+      margin-bottom: 9px;
+    }
+
+    .leave-guide-item h4 {
+      font-size: 8.2pt;
+      font-weight: bold;
+      margin-bottom: 2px;
+    }
+
+    .leave-guide-item ul {
+      padding-left: 14px;
+      margin-top: 2px;
+    }
+
+    .leave-guide-item li {
+      margin-bottom: 2px;
+    }
+
+    .footer-note {
+      margin-top: 12px;
+      padding-top: 6px;
+      border-top: 1px solid #000;
+      font-size: 7.5pt;
+      font-style: italic;
+    }
+
+    /* Print Settings */
+    @media print {
+      body {
+        background: none;
+        padding: 0;
+      }
+
+      .sheet {
+        margin: 0;
+        box-shadow: none;
+        width: 100%;
+        min-height: auto;
+        page-break-after: always;
+      }
+
+      .sheet:last-child {
+        page-break-after: auto;
+      }
+
+      input[type="text"],
+      input[type="date"],
+      input[type="number"] {
+        background: transparent !important;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ========================================================= -->
+  <!-- SHEET 1: FRONT PAGE (CS Form No. 6, Rev 2020 - Page 1 of 2) -->
+  <!-- ========================================================= -->
+  <div class="sheet" id="sheet-1">
+    <div class="form-meta">Civil Service Form No. 6<br />Revised 2020</div>
+
+    <div class="header-block">
+      <div class="logo-placeholder">AGENCY<br />LOGO</div>
+      <div class="agency-header">
+        <p>Republic of the Philippines</p>
+        <h1>CORON DISTRICT HOSPITAL</h1>
+        <p>Barangay V (Poblacion) National Highway, Coron, Palawan</p>
+      </div>
+    </div>
+
+    <div class="form-title">APPLICATION FOR LEAVE</div>
+
+    <table class="form-table">
+      <!-- Row 1: Office & Name -->
+      <tr>
+        <td style="width: 38%;">
+          <strong>1. OFFICE/DEPARTMENT</strong>
+          <input type="text" class="full-input" placeholder="Enter Office / Department" />
+        </td>
+        <td style="width: 62%;">
+          <strong>2. NAME :</strong>
+          <div class="name-grid">
+            <div>
+              <span>(Last)</span>
+              <input type="text" placeholder="Last Name" />
+            </div>
+            <div>
+              <span>(First)</span>
+              <input type="text" placeholder="First Name" />
+            </div>
+            <div>
+              <span>(Middle)</span>
+              <input type="text" placeholder="Middle Name" />
+            </div>
+          </div>
+        </td>
+      </tr>
+
+      <!-- Row 2: Date of Filing, Position, Salary -->
+      <tr>
+        <td>
+          <strong>3. DATE OF FILING</strong>
+          <input type="text" class="short-input" placeholder="MM/DD/YYYY" />
+        </td>
+        <td>
+          <div style="display: flex; justify-content: space-between; gap: 8px;">
+            <div style="flex: 1.4;">
+              <strong>4. POSITION</strong>
+              <input type="text" style="width: 65%;" placeholder="Position Title" />
+            </div>
+            <div style="flex: 1;">
+              <strong>5. SALARY</strong>
+              <input type="text" style="width: 60%;" placeholder="SG / Amount" />
+            </div>
+          </div>
+        </td>
+      </tr>
+
+      <!-- Section 6 Banner -->
+      <tr>
+        <td colspan="2" class="section-banner">6. DETAILS OF APPLICATION</td>
+      </tr>
+
+      <!-- Section 6.A and 6.B -->
+      <tr>
+        <!-- 6.A Type of Leave -->
+        <td style="width: 52%;">
+          <span class="sub-header">6.A TYPE OF LEAVE TO BE AVAILED OF</span>
+          <ul class="checkbox-list">
+            <li>
+              <input type="checkbox" id="vl" />
+              <label for="vl"><span class="leave-type-title">Vacation Leave</span> <span class="legal-ref">(Sec. 51, Rule XVI, Omnibus Rules Implementing E.O. No. 292)</span></label>
+            </li>
+            <li>
+              <input type="checkbox" id="fl" />
+              <label for="fl"><span class="leave-type-title">Mandatory/Forced Leave</span> <span class="legal-ref">(Sec. 25, Rule XVI, Omnibus Rules Implementing E.O. No. 292)</span></label>
+            </li>
+            <li>
+              <input type="checkbox" id="sl" />
+              <label for="sl"><span class="leave-type-title">Sick Leave</span> <span class="legal-ref">(Sec. 43, Rule XVI, Omnibus Rules Implementing E.O. No. 292)</span></label>
+            </li>
+            <li>
+              <input type="checkbox" id="ml" />
+              <label for="ml"><span class="leave-type-title">Maternity Leave</span> <span class="legal-ref">(R.A. No. 11210 / IRR issued by CSC, DOLE and SSS)</span></label>
+            </li>
+            <li>
+              <input type="checkbox" id="pl" />
+              <label for="pl"><span class="leave-type-title">Paternity Leave</span> <span class="legal-ref">(R.A. No. 8187 / CSC MC No. 71, s. 1998, as amended)</span></label>
+            </li>
+            <li>
+              <input type="checkbox" id="spl" />
+              <label for="spl"><span class="leave-type-title">Special Privilege Leave</span> <span class="legal-ref">(Sec. 21, Rule XVI, Omnibus Rules Implementing E.O. No. 292)</span></label>
+            </li>
+            <li>
+              <input type="checkbox" id="solo" />
+              <label for="solo"><span class="leave-type-title">Solo Parent Leave</span> <span class="legal-ref">(RA No. 8972 / CSC MC No. 8, s. 2004)</span></label>
+            </li>
+            <li>
+              <input type="checkbox" id="study" />
+              <label for="study"><span class="leave-type-title">Study Leave</span> <span class="legal-ref">(Sec. 68, Rule XVI, Omnibus Rules Implementing E.O. No. 292)</span></label>
+            </li>
+            <li>
+              <input type="checkbox" id="vawc" />
+              <label for="vawc"><span class="leave-type-title">10-Day VAWC Leave</span> <span class="legal-ref">(RA No. 9262 / CSC MC No. 15, s. 2005)</span></label>
+            </li>
+            <li>
+              <input type="checkbox" id="rehab" />
+              <label for="rehab"><span class="leave-type-title">Rehabilitation Privilege</span> <span class="legal-ref">(Sec. 55, Rule XVI, Omnibus Rules Implementing E.O. No. 292)</span></label>
+            </li>
+            <li>
+              <input type="checkbox" id="slbw" />
+              <label for="slbw"><span class="leave-type-title">Special Leave Benefits for Women</span> <span class="legal-ref">(RA No. 9710 / CSC MC No. 25, s. 2010)</span></label>
+            </li>
+            <li>
+              <input type="checkbox" id="calamity" />
+              <label for="calamity"><span class="leave-type-title">Special Emergency (Calamity) Leave</span> <span class="legal-ref">(CSC MC No. 2, s. 2012, as amended)</span></label>
+            </li>
+            <li>
+              <input type="checkbox" id="adoption" />
+              <label for="adoption"><span class="leave-type-title">Adoption Leave</span> <span class="legal-ref">(R.A. No. 8552)</span></label>
+            </li>
+          </ul>
+          <div style="margin-top: 8px; font-size: 7.8pt;">
+            <em>Others:</em>
+            <input type="text" class="full-input" placeholder="Specify other leave type" />
+          </div>
+        </td>
+
+        <!-- 6.B Details of Leave -->
+        <td style="width: 48%;">
+          <span class="sub-header">6.B DETAILS OF LEAVE</span>
+
+          <div class="detail-group">
+            <span class="detail-group-title">In case of Vacation/Special Privilege Leave:</span>
+            <ul class="checkbox-list">
+              <li>
+                <input type="checkbox" />
+                <span>Within the Philippines <input type="text" style="width: 115px;" /></span>
+              </li>
+              <li>
+                <input type="checkbox" />
+                <span>Abroad (Specify) <input type="text" style="width: 130px;" /></span>
+              </li>
+            </ul>
+          </div>
+
+          <div class="detail-group">
+            <span class="detail-group-title">In case of Sick Leave:</span>
+            <ul class="checkbox-list">
+              <li>
+                <input type="checkbox" />
+                <span>In Hospital (Specify Illness) <input type="text" style="width: 95px;" /></span>
+              </li>
+              <li>
+                <input type="checkbox" />
+                <span>Out Patient (Specify Illness) <input type="text" style="width: 95px;" /></span>
+              </li>
+            </ul>
+            <input type="text" class="full-input" />
+          </div>
+
+          <div class="detail-group">
+            <span class="detail-group-title">In case of Special Leave Benefits for Women:</span>
+            <div style="font-size: 7.8pt;">
+              (Specify Illness) <input type="text" style="width: 65%;" />
+              <input type="text" class="full-input" />
+            </div>
+          </div>
+
+          <div class="detail-group">
+            <span class="detail-group-title">In case of Study Leave:</span>
+            <ul class="checkbox-list">
+              <li><input type="checkbox" /> <span>Completion of Master's Degree</span></li>
+              <li><input type="checkbox" /> <span>BAR/Board Examination Review</span></li>
+            </ul>
+          </div>
+
+          <div class="detail-group">
+            <span class="detail-group-title">Other purpose:</span>
+            <ul class="checkbox-list">
+              <li><input type="checkbox" /> <span>Monetization of Leave Credits</span></li>
+              <li><input type="checkbox" /> <span>Terminal Leave</span></li>
+            </ul>
+          </div>
+        </td>
+      </tr>
+
+      <!-- Section 6.C and 6.D -->
+      <tr>
+        <td>
+          <span class="sub-header">6.C NUMBER OF WORKING DAYS APPLIED FOR</span>
+          <input type="text" class="full-input" placeholder="e.g., 3 working days" />
+          <div style="margin-top: 8px; font-weight: bold; font-size: 7.8pt;">INCLUSIVE DATES</div>
+          <input type="text" class="full-input" placeholder="e.g., November 25–27, 2026" />
+        </td>
+        <td>
+          <span class="sub-header">6.D COMMUTATION</span>
+          <ul class="checkbox-list">
+            <li><input type="checkbox" /> <span>Not Requested</span></li>
+            <li><input type="checkbox" /> <span>Requested</span></li>
+          </ul>
+          <div class="sig-box" style="margin-top: 24px;">
+            <div class="sig-line">(Signature of Applicant)</div>
+          </div>
+        </td>
+      </tr>
+
+      <!-- Section 7 Banner -->
+      <tr>
+        <td colspan="2" class="section-banner">7. DETAILS OF ACTION ON APPLICATION</td>
+      </tr>
+
+      <!-- Section 7.A and 7.B -->
+      <tr>
+        <td>
+          <span class="sub-header">7.A CERTIFICATION OF LEAVE CREDITS</span>
+          <div style="text-align: center; font-size: 7.8pt; margin-bottom: 4px;">
+            As of <input type="text" style="width: 130px; text-align: center;" />
+          </div>
+          <table class="credits-table">
+            <thead>
+              <tr>
+                <th style="width: 44%;"></th>
+                <th style="width: 28%;">Vacation Leave</th>
+                <th style="width: 28%;">Sick Leave</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><em>Total Earned</em></td>
+                <td><input type="text" /></td>
+                <td><input type="text" /></td>
+              </tr>
+              <tr>
+                <td><em>Less this application</em></td>
+                <td><input type="text" /></td>
+                <td><input type="text" /></td>
+              </tr>
+              <tr>
+                <td><em>Balance</em></td>
+                <td><input type="text" /></td>
+                <td><input type="text" /></td>
+              </tr>
+            </tbody>
+          </table>
+          <div class="sig-box" style="margin-top: 26px;">
+            <div class="sig-line">
+              <div class="official-name">ROLANDO B. BUÑI</div>
+              <div class="official-title">PGDH/Provincial Human Resource Management Officer</div>
+            </div>
+          </div>
+        </td>
+
+        <td>
+          <span class="sub-header">7.B RECOMMENDATION</span>
+          <ul class="checkbox-list">
+            <li><input type="checkbox" /> <span>For approval</span></li>
+            <li>
+              <input type="checkbox" />
+              <span>For disapproval due to <input type="text" style="width: 115px;" /></span>
+            </li>
+          </ul>
+          <input type="text" class="full-input" />
+          <input type="text" class="full-input" />
+          <input type="text" class="full-input" />
+
+          <div class="sig-box" style="margin-top: 38px;">
+            <div class="sig-line">
+              <div class="official-name">ARIANE T. CAPALLA, RMT, MD, MMHoA</div>
+              <div class="official-title">Chief of Hospital</div>
+            </div>
+          </div>
+        </td>
+      </tr>
+
+      <!-- Section 7.C and 7.D -->
+      <tr>
+        <td style="border-bottom: none;">
+          <span class="sub-header">7.C APPROVED FOR:</span>
+          <div style="font-size: 7.8pt; line-height: 1.7; padding-left: 10px;">
+            <div><input type="text" style="width: 55px;" /> days with pay</div>
+            <div><input type="text" style="width: 55px;" /> days without pay</div>
+            <div><input type="text" style="width: 55px;" /> others (Specify) <input type="text" style="width: 90px;" /></div>
+          </div>
+        </td>
+        <td style="border-bottom: none;">
+          <span class="sub-header">7.D DISAPPROVED DUE TO:</span>
+          <div style="padding-left: 6px;">
+            <input type="text" class="full-input" />
+            <input type="text" class="full-input" />
+            <input type="text" class="full-input" />
+          </div>
+        </td>
+      </tr>
+
+      <!-- Authorized Official Signatory -->
+      <tr>
+        <td colspan="2" style="border-top: none; text-align: center; padding-top: 26px; padding-bottom: 8px;">
+          <div style="width: 45%; margin: 0 auto; border-top: 1px solid #000; padding-top: 2px; font-size: 8pt;">
+            (Authorized Official)
+          </div>
+        </td>
+      </tr>
+    </table>
+  </div>
+
+  <!-- ========================================================= -->
+  <!-- SHEET 2: BACK PAGE (Instructions & Documentary Requirements) -->
+  <!-- ========================================================= -->
+  <div class="sheet" id="sheet-2">
+    <div class="form-meta">CS Form No. 6, Revised 2020 (Back Page)</div>
+
+    <div class="instructions-box">
+      <div class="instructions-title">Instructions and Requirements</div>
+      <p class="instructions-intro">
+        Applications for any type of leave must be accomplished on this form in at least two (2) copies and submitted together with the corresponding supporting documents outlined below:
+      </p>
+
+      <div class="instructions-columns">
+        <div class="leave-guide-item">
+          <h4>1. Vacation Leave</h4>
+          <p>File at least five (5) working days ahead of the intended leave date whenever possible. Indicate whether the leave will be spent within the Philippines or abroad to facilitate travel authority and clearance requirements.</p>
+        </div>
+
+        <div class="leave-guide-item">
+          <h4>2. Mandatory / Forced Leave</h4>
+          <p>The required five-day annual vacation leave is forfeited if unused within the calendar year, unless cancelled by the agency head due to service exigency. Any approved vacation leave of one (1) day or more counts toward this requirement under CSC rules.</p>
+        </div>
+
+        <div class="leave-guide-item">
+          <h4>3. Sick Leave*</h4>
+          <p>Submit immediately upon returning to work. Applications filed in advance or covering more than five (5) consecutive days require a medical certificate (or a sworn affidavit if no medical consultation took place).</p>
+        </div>
+
+        <div class="leave-guide-item">
+          <h4>4. Maternity Leave* – 105 days</h4>
+          <ul>
+            <li>Medical proof of pregnancy (e.g., ultrasound or physician's certification indicating expected delivery date).</li>
+            <li>Accomplished Notice of Allocation of Maternity Leave Credits (CS Form No. 6a), when applicable.</li>
+            <li>Seconded female personnel receive full pay from the receiving agency.</li>
+          </ul>
+        </div>
+
+        <div class="leave-guide-item">
+          <h4>5. Paternity Leave – 7 days</h4>
+          <p>Attach proof of child delivery (such as a birth certificate or medical certificate) together with a copy of the marriage contract.</p>
+        </div>
+
+        <div class="leave-guide-item">
+          <h4>6. Special Privilege Leave – 3 days</h4>
+          <p>File for approval at least one (1) week prior to availment, except during emergencies. Specify local or foreign destination for travel authority and clearance purposes.</p>
+        </div>
+
+        <div class="leave-guide-item">
+          <h4>7. Solo Parent Leave – 7 days</h4>
+          <p>Submit in advance—ideally five (5) working days before the leave—along with a valid, updated Solo Parent Identification Card.</p>
+        </div>
+
+        <div class="leave-guide-item">
+          <h4>8. Study Leave* – up to 6 months</h4>
+          <ul>
+            <li>Compliance with internal agency guidelines and qualification rules.</li>
+            <li>Executed service contract between the employee and the agency head or authorized representative.</li>
+          </ul>
+        </div>
+
+        <div class="leave-guide-item">
+          <h4>9. 10-Day VAWC Leave</h4>
+          <p>May be filed before or immediately after the leave period, supported by any of the following:</p>
+          <ul>
+            <li>Barangay Protection Order (BPO) or court-issued Temporary/Permanent Protection Order (TPO/PPO);</li>
+            <li>Certification from the Punong Barangay, Kagawad, Prosecutor, or Clerk of Court confirming a pending protection order application; or</li>
+            <li>Police report detailing the incident and a medical certificate, subject to the immediate supervisor's evaluation.</li>
+          </ul>
+        </div>
+
+        <div class="leave-guide-item">
+          <h4>10. Rehabilitation Privilege* – up to 6 months</h4>
+          <ul>
+            <li>Submit within one (1) week from the date of the accident unless extended for valid reasons.</li>
+            <li>Written letter request with relevant incident or police reports.</li>
+            <li>Medical certificate detailing injuries, treatment plan, and required recovery period (plus written concurrence from a government physician if treated by a private doctor).</li>
+          </ul>
+        </div>
+
+        <div class="leave-guide-item">
+          <h4>11. Special Leave Benefits for Women* – up to 2 months</h4>
+          <p>File at least five (5) days before scheduled gynecological surgery (or immediately upon return in emergency cases, provided the agency was notified during confinement). Attach a medical certificate and clinical summary from the attending surgeon detailing the diagnosis, surgical procedure, operative technique, confinement period, and estimated recovery duration.</p>
+        </div>
+
+        <div class="leave-guide-item">
+          <h4>12. Special Emergency (Calamity) Leave – up to 5 days</h4>
+          <p>Granted once per year for up to five (5) straight or staggered working days within thirty (30) days from the calamity occurrence, subject to agency verification of the employee's residence within a declared calamity area.</p>
+        </div>
+
+        <div class="leave-guide-item">
+          <h4>13. Monetization of Leave Credits</h4>
+          <p>Requests to monetize 50% or more of accumulated leave credits must include a formal letter request to the agency head stating valid and justifiable reasons.</p>
+        </div>
+
+        <div class="leave-guide-item">
+          <h4>14. Terminal Leave*</h4>
+          <p>Attach official proof of resignation, retirement, or separation from government service.</p>
+        </div>
+
+        <div class="leave-guide-item">
+          <h4>15. Adoption Leave</h4>
+          <p>Include an authenticated copy of the Pre-Adoptive Placement Authority issued by the Department of Social Welfare and Development (DSWD).</p>
+        </div>
+      </div>
+
+      <div class="footer-note">
+        * For leave of absence of thirty (30) calendar days or more and terminal leave, application shall be accompanied by a clearance from money, property, and work-related accountabilities (pursuant to CSC Memorandum Circular No. 2, s. 1985).
+      </div>
+    </div>
+  </div>
+
+</body>
+</html>
