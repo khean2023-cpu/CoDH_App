@@ -1585,12 +1585,10 @@
       const [toast, setToast] = useState(null);
       const [dataLoaded, setDataLoaded] = useState(false);
       const [welcomeClock, setWelcomeClock] = useState(() => new Date());
-      const [welcomeClock24Hour, setWelcomeClock24Hour] = useState(false);
-      const [welcomeClockSeconds, setWelcomeClockSeconds] = useState(false);
       const [dashboardWeather, setDashboardWeather] = useState(null);
       const [dashboardWeatherError, setDashboardWeatherError] = useState('');
-      const [dashboardMarket, setDashboardMarket] = useState(null);
-      const [dashboardMarketError, setDashboardMarketError] = useState('');
+      const [dashboardExchangeRates, setDashboardExchangeRates] = useState(null);
+      const [dashboardExchangeRatesError, setDashboardExchangeRatesError] = useState('');
 
       const [formType, setFormType] = useState('');
       const EMPTY_LEAVE_DETAILS = {
@@ -1646,8 +1644,8 @@
         timeZone: 'Asia/Manila',
         hour: '2-digit',
         minute: '2-digit',
-        ...(welcomeClockSeconds ? { second: '2-digit' } : {}),
-        hourCycle: welcomeClock24Hour ? 'h23' : 'h12'
+        second: '2-digit',
+        hourCycle: 'h12'
       }).formatToParts(welcomeClock);
       const welcomeClockTime = welcomeTimeParts
         .filter(part => ['hour', 'minute', 'second'].includes(part.type))
@@ -1701,6 +1699,10 @@
           minute: '2-digit'
         }).format(new Date(timestamp))
         : 'Waiting for data';
+      const dashboardExchangeCurrencyRows = Object.entries(dashboardExchangeRates?.rates || {})
+        .sort(([left], [right]) => left === right ? 0 : left === 'USD' ? -1 : right === 'USD' ? 1 : left.localeCompare(right));
+      const formatExchangeRate = rate =>
+        new Intl.NumberFormat('en-PH', { maximumSignificantDigits: 6 }).format(rate);
       const welcomeDate = new Intl.DateTimeFormat('en-PH', {
         timeZone: 'Asia/Manila',
         weekday: 'long',
@@ -1724,9 +1726,9 @@
             .some(value => String(value || '').toLocaleLowerCase().includes(normalizedLeaveCreditEmployeeFilter))
         );
       useEffect(() => {
-        const timer = setInterval(() => setWelcomeClock(new Date()), welcomeClockSeconds ? 1000 : 30000);
+        const timer = setInterval(() => setWelcomeClock(new Date()), 1000);
         return () => clearInterval(timer);
-      }, [welcomeClockSeconds]);
+      }, []);
 
       useEffect(() => {
         if (activeTab !== 'dashboard' || !currentUser) return;
@@ -1764,29 +1766,29 @@
           }
         };
 
-        const loadMarket = async () => {
+        const loadExchangeRates = async () => {
           try {
-            const quote = await api('market/psei');
+            const rates = await api('market/currency-rates');
             if (!isCancelled) {
-              setDashboardMarket({ ...quote, fetchedAt: Date.now() });
-              setDashboardMarketError('');
+              setDashboardExchangeRates({ ...rates, fetchedAt: Date.now() });
+              setDashboardExchangeRatesError('');
             }
           } catch (error) {
             if (!isCancelled) {
-              setDashboardMarketError(error.message || 'Unable to load the latest PSEi quote.');
+              setDashboardExchangeRatesError(error.message || 'Unable to load Philippine peso exchange rates.');
             }
           }
         };
 
         loadWeather();
-        loadMarket();
+        loadExchangeRates();
         const weatherTimer = window.setInterval(loadWeather, 15 * 60 * 1000);
-        const marketTimer = window.setInterval(loadMarket, 60 * 1000);
+        const exchangeRatesTimer = window.setInterval(loadExchangeRates, 60 * 60 * 1000);
         return () => {
           isCancelled = true;
           weatherController?.abort();
           window.clearInterval(weatherTimer);
-          window.clearInterval(marketTimer);
+          window.clearInterval(exchangeRatesTimer);
         };
       }, [activeTab, currentUser?.id]);
 
@@ -4579,53 +4581,32 @@
                       </div>
                     </div>
 
-                    <section
-                      aria-label="Live system clock"
-                      className="rounded-2xl border border-slate-700/80 bg-slate-800/45 p-4 shadow-lg shadow-slate-950/20"
-                    >
-                      <div className="flex flex-wrap items-center justify-between gap-3">
-                        <h4 className="inline-flex items-center gap-2 text-[10px] font-extrabold uppercase tracking-[0.14em] text-indigo-300 sm:text-[11px]">
-                          <Icon name="clock" className="h-4 w-4" />
-                          Live System Clock
-                        </h4>
-                        <div className="inline-flex rounded-xl bg-slate-950/60 p-1" aria-label="Clock display settings">
-                          <button
-                            type="button"
-                            aria-pressed={welcomeClock24Hour}
-                            onClick={() => setWelcomeClock24Hour(value => !value)}
-                            className={`rounded-lg px-3 py-1.5 text-[9px] font-extrabold tracking-wide transition-colors ${welcomeClock24Hour ? 'bg-indigo-600 text-white shadow' : 'text-slate-400 hover:text-white'}`}
-                          >
-                            24H
-                          </button>
-                          <button
-                            type="button"
-                            aria-pressed={welcomeClockSeconds}
-                            onClick={() => setWelcomeClockSeconds(value => !value)}
-                            className={`rounded-lg px-3 py-1.5 text-[9px] font-extrabold tracking-wide transition-colors ${welcomeClockSeconds ? 'bg-indigo-600 text-white shadow' : 'text-slate-400 hover:text-white'}`}
-                          >
-                            SEC
-                          </button>
-                        </div>
-                      </div>
-                      <div className="mt-3 flex items-baseline gap-2 font-mono text-4xl font-black tracking-tight text-indigo-50 sm:mt-4 sm:text-5xl">
-                          <time aria-label={`${welcomeClockTime}${welcomeClockDayPeriod ? ` ${welcomeClockDayPeriod}` : ''}`}>
-                            {welcomeClockTime}
-                          </time>
-                          {!welcomeClock24Hour && welcomeClockDayPeriod && (
-                            <span className="text-base font-extrabold uppercase tracking-normal text-indigo-400 sm:text-lg">{welcomeClockDayPeriod}</span>
-                          )}
-                      </div>
-                      <div className="mt-4 flex flex-wrap items-center justify-between gap-2 border-t border-slate-700/70 pt-3 text-[10px] font-semibold text-slate-300 sm:text-xs">
-                        <time dateTime={welcomeClock.toISOString()}>{welcomeDate}</time>
-                        <span className="rounded-full border border-slate-700 bg-slate-800/70 px-2.5 py-1 text-[9px] text-slate-400">UTC+08:00</span>
-                      </div>
-                    </section>
-
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 gap-3 md:grid-cols-2" aria-label="Live weather and Philippine stock market">
-                  <section aria-label="Current weather in Coron, Palawan" className="min-w-0 rounded-2xl border border-sky-500/20 bg-gradient-to-br from-sky-950/70 to-slate-950 p-4 shadow-lg">
+                <div className="grid grid-cols-1 gap-3 md:grid-cols-2" aria-label="Philippine time, weather, and peso exchange rates">
+                  <section aria-label="Philippine time and current weather in Coron, Palawan" className="min-w-0 rounded-2xl border border-sky-500/20 bg-gradient-to-br from-sky-950/70 to-slate-950 p-3 shadow-lg">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <h4 className="inline-flex items-center gap-2 text-[10px] font-extrabold uppercase tracking-[0.14em] text-indigo-300 sm:text-[11px]">
+                          <Icon name="clock" className="h-4 w-4" />
+                          Philippine Standard Time
+                        </h4>
+                        <div className="mt-1 flex items-baseline gap-2 font-mono text-3xl font-black tracking-tight text-white sm:text-4xl">
+                          <time aria-label={`${welcomeClockTime} ${welcomeClockDayPeriod}`}>
+                            {welcomeClockTime}
+                          </time>
+                          <span className="text-sm font-extrabold uppercase tracking-normal text-indigo-300">{welcomeClockDayPeriod}</span>
+                        </div>
+                        <time className="mt-1 block text-[10px] font-semibold text-slate-300" dateTime={welcomeClock.toISOString()}>
+                          {welcomeDate}
+                        </time>
+                      </div>
+                      <span className="shrink-0 rounded-full border border-slate-700 bg-slate-800/70 px-2 py-1 text-[9px] text-slate-400">UTC+08:00</span>
+                    </div>
+
+                    <div className="my-3 border-t border-slate-700/70" />
+
                     <div className="flex items-start justify-between gap-3">
                       <div>
                         <h4 className="inline-flex items-center gap-2 text-[10px] font-extrabold uppercase tracking-[0.14em] text-sky-300 sm:text-[11px]">
@@ -4640,8 +4621,8 @@
                         {dashboardWeather ? 'CURRENT' : 'LOADING'}
                       </span>
                     </div>
-                    <div className="mt-3 flex items-end justify-between gap-3">
-                      <p className="text-4xl font-black tracking-tight text-white">
+                    <div className="mt-2 flex items-end justify-between gap-3">
+                      <p className="text-3xl font-black tracking-tight text-white">
                         {dashboardWeather ? `${Math.round(dashboardWeather.temperature_2m)}°C` : '—'}
                       </p>
                       <div className="text-right text-[10px] leading-5 text-slate-300">
@@ -4655,51 +4636,69 @@
                         {dashboardWeather ? 'Update failed; showing last successful reading.' : dashboardWeatherError}
                       </p>
                     )}
-                    <div className="mt-3 flex flex-wrap items-center justify-between gap-1 border-t border-slate-700/70 pt-2 text-[9px] text-slate-500">
+                    <div className="mt-2 flex flex-wrap items-center justify-between gap-1 text-[9px] text-slate-500">
                       <span>Open-Meteo · refreshes every 15 min</span>
-                      <span>Observed {dashboardWeather?.observationTime?.slice(11, 16) || '—'} PH time</span>
+                      <span>Updated {dashboardUpdateTime(dashboardWeather?.fetchedAt)}</span>
                     </div>
+                    <div className="mt-2 border-t border-slate-700/70" />
                   </section>
 
-                  <section aria-label="Philippine Stock Exchange Index" className="min-w-0 rounded-2xl border border-violet-500/20 bg-gradient-to-br from-violet-950/70 to-slate-950 p-4 shadow-lg">
+                  <section aria-label="Philippine peso exchange rates" className="min-w-0 rounded-2xl border border-violet-500/20 bg-gradient-to-br from-violet-950/70 to-slate-950 p-3 shadow-lg">
                     <div className="flex items-start justify-between gap-3">
                       <div>
                         <h4 className="inline-flex items-center gap-2 text-[10px] font-extrabold uppercase tracking-[0.14em] text-violet-300 sm:text-[11px]">
-                          <Icon name="file-text" className="h-4 w-4" />
-                          Philippine Stock Exchange
+                          <Icon name="wallet" className="h-4 w-4" />
+                          Philippine Peso Exchange Rates
                         </h4>
-                        <p className="mt-1 text-[10px] text-slate-400">PSEi Composite Index</p>
+                        <p className="mt-1 text-[10px] text-slate-400">PHP compared with world currencies</p>
                       </div>
                       <span className="shrink-0 rounded-full border border-violet-500/20 bg-violet-500/10 px-2 py-1 text-[9px] font-bold text-violet-200">
-                        {dashboardMarket ? 'AUTO-REFRESH' : 'LOADING'}
+                        {dashboardExchangeRates ? 'DAILY RATES' : 'LOADING'}
                       </span>
                     </div>
-                    <div className="mt-3 flex flex-wrap items-end justify-between gap-3">
-                      <p className="text-3xl font-black tracking-tight text-white">
-                        {dashboardMarket
-                          ? new Intl.NumberFormat('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(dashboardMarket.price)
+                    <div className="mt-2 rounded-xl border border-emerald-400/30 bg-emerald-400/10 px-3 py-2">
+                      <p className="text-[9px] font-extrabold uppercase tracking-[0.12em] text-emerald-300">US Dollar · USD</p>
+                      <p className="mt-0.5 flex flex-wrap items-baseline gap-1.5 text-sm font-bold text-white">
+                        <span>₱1 =</span>
+                        <span className="text-2xl font-black tracking-tight text-emerald-200">
+                          {dashboardExchangeRates?.rates?.USD
+                            ? new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 4 }).format(dashboardExchangeRates.rates.USD)
+                            : '—'}
+                        </span>
+                      </p>
+                      <p className="text-[10px] text-emerald-100/80">
+                        1 USD = ₱{dashboardExchangeRates?.rates?.USD
+                          ? new Intl.NumberFormat('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(1 / dashboardExchangeRates.rates.USD)
                           : '—'}
                       </p>
-                      <p className={`text-xs font-bold ${dashboardMarket?.change >= 0 ? 'text-emerald-300' : 'text-rose-300'}`}>
-                        {dashboardMarket
-                          ? `${dashboardMarket.change >= 0 ? '+' : ''}${dashboardMarket.change.toFixed(2)} (${dashboardMarket.changePercent >= 0 ? '+' : ''}${dashboardMarket.changePercent.toFixed(2)}%)`
-                          : 'Waiting for quote'}
-                      </p>
                     </div>
-                    <div className="mt-2 flex justify-between gap-2 text-[10px] text-slate-300">
-                      <span>Day low {dashboardMarket?.dayLow == null ? '—' : dashboardMarket.dayLow.toFixed(2)}</span>
-                      <span>Day high {dashboardMarket?.dayHigh == null ? '—' : dashboardMarket.dayHigh.toFixed(2)}</span>
-                    </div>
-                    {dashboardMarketError && (
+
+                    {dashboardExchangeRatesError && (
                       <p role="status" className="mt-2 text-[10px] text-amber-300">
-                        {dashboardMarket ? 'Update failed; showing last successful quote.' : dashboardMarketError}
+                        {dashboardExchangeRates ? 'Update failed; showing the last successful rates.' : dashboardExchangeRatesError}
                       </p>
                     )}
-                    <div className="mt-3 flex flex-wrap items-center justify-between gap-1 border-t border-slate-700/70 pt-2 text-[9px] text-slate-500">
-                      <a href="https://finance.yahoo.com/quote/PSEI.PS/" target="_blank" rel="noreferrer" className="hover:text-violet-300">Yahoo Finance · refreshes every 60 sec</a>
-                      <span>Quote {dashboardUpdateTime(dashboardMarket?.quoteTime)}</span>
+
+                    <div className="mt-2 max-h-36 overflow-y-auto rounded-lg border border-slate-700/70 bg-slate-950/40 px-2" aria-label="Exchange rates for all available currencies">
+                      {dashboardExchangeRates
+                        ? dashboardExchangeCurrencyRows.map(([currency, rate]) => (
+                          <div
+                            key={currency}
+                            className={`flex items-center justify-between gap-2 border-b border-slate-800/80 py-1 text-[9px] last:border-b-0 ${
+                              currency === 'USD' ? 'font-extrabold text-emerald-200' : 'text-slate-300'
+                            }`}
+                          >
+                            <span>{currency === 'USD' ? '🇺🇸 USD' : currency}</span>
+                            <span className="text-right">₱1 = {formatExchangeRate(rate)} {currency}</span>
+                          </div>
+                        ))
+                        : <p className="py-2 text-[10px] text-slate-400">Loading exchange rates…</p>}
                     </div>
-                    <p className="mt-1 text-[9px] text-slate-500">Public data may be delayed; not for trading decisions.</p>
+
+                    <div className="mt-2 flex flex-wrap items-center justify-between gap-1 text-[9px] text-slate-500">
+                      <a href="https://www.exchangerate-api.com/docs/free" target="_blank" rel="noreferrer" className="hover:text-violet-300">ExchangeRate-API · daily updates</a>
+                      <span>Updated {dashboardUpdateTime(dashboardExchangeRates?.lastUpdatedAt)}</span>
+                    </div>
                   </section>
                 </div>
 

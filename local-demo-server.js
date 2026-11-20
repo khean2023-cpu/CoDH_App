@@ -128,6 +128,7 @@ const json = (res, body, status = 200) => {
 const fail = (res, message, status = 400) => json(res, { error: message }, status);
 const publicUser = ({ password, ...user }) => user;
 let pseiQuoteCache = null;
+let currencyRatesCache = null;
 const readBody = (req, limit = 1024 * 1024) => new Promise((resolveBody, reject) => {
   const chunks = [];
   let length = 0;
@@ -192,6 +193,65 @@ const server = createServer(async (req, res) => {
           return json(res, quote);
         } catch {
           return fail(res, "Unable to retrieve the latest PSEi quote. Please try again later.", 502);
+        }
+      }
+
+      if (resource === "market" && id === "currency-rates" && req.method === "GET") {
+        if (currencyRatesCache && currencyRatesCache.expiresAt > Date.now()) {
+          return json(res, currencyRatesCache.rates);
+        }
+
+        try {
+          const response = await fetch("https://open.er-api.com/v6/latest/PHP", {
+            headers: { Accept: "application/json" },
+            signal: AbortSignal.timeout(8000),
+          });
+          if (!response.ok) return fail(res, "The exchange-rate provider is temporarily unavailable.", 502);
+          const payload = await response.json();
+          const rawRates = payload.rates;
+          if (
+            payload.result !== "success" ||
+            payload.base_code !== "PHP" ||
+            !rawRates ||
+            typeof rawRates !== "object" ||
+            Array.isArray(rawRates) ||
+            !Number.isFinite(payload.time_last_update_unix) ||
+            !Number.isFinite(payload.time_next_update_unix) ||
+            payload.time_next_update_unix <= payload.time_last_update_unix
+          ) {
+            return fail(res, "The exchange-rate provider returned invalid data.", 502);
+          }
+
+          const entries = Object.entries(rawRates);
+          if (
+            entries.length < 20 ||
+            entries.some(([currency, rate]) =>
+              !/^[A-Z]{3}$/.test(currency) ||
+              typeof rate !== "number" ||
+              !Number.isFinite(rate) ||
+              rate <= 0
+            )
+          ) {
+            return fail(res, "The exchange-rate provider returned invalid currency rates.", 502);
+          }
+
+          if (rawRates.PHP !== 1 || typeof rawRates.USD !== "number") {
+            return fail(res, "The exchange-rate provider did not return PHP and USD rates.", 502);
+          }
+
+          const rates = {
+            baseCode: "PHP",
+            rates: rawRates,
+            lastUpdatedAt: payload.time_last_update_unix * 1000,
+            nextUpdateAt: payload.time_next_update_unix * 1000,
+          };
+          currencyRatesCache = {
+            expiresAt: Math.max(Date.now() + 60_000, rates.nextUpdateAt),
+            rates,
+          };
+          return json(res, rates);
+        } catch {
+          return fail(res, "Unable to retrieve Philippine peso exchange rates. Please try again later.", 502);
         }
       }
 
