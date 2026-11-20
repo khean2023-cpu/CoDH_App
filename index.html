@@ -11,7 +11,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="CoDH App">
   <meta name="application-name" content="CoDH App">
-  <meta name="app-version" content="1.5">
+  <meta name="app-version" content="1.6">
   <script>
     (() => {
       document.documentElement.classList.add('app-launching');
@@ -1538,6 +1538,7 @@
       const [notifications, setNotifications] = useState([]);
       const [showNotifPanel, setShowNotifPanel] = useState(false);
       const [isPublicChatOpen, setIsPublicChatOpen] = useState(false);
+      const [publicChatUnreadCount, setPublicChatUnreadCount] = useState(0);
       const [publicChatMessages, setPublicChatMessages] = useState([]);
       const [publicChatDraft, setPublicChatDraft] = useState('');
       const [publicChatError, setPublicChatError] = useState('');
@@ -1552,6 +1553,7 @@
       const publicChatPressTimer = useRef(null);
       const publicChatTimeHideTimer = useRef(null);
       const publicChatNotificationSnapshot = useRef({ userId: null, ids: new Set() });
+      const publicChatUnreadCountRef = useRef(0);
       const [notificationSoundEnabled, setNotificationSoundEnabled] = useState(false);
       const [deviceNotificationsEnabled, setDeviceNotificationsEnabled] = useState(() => localStorage.getItem('codh-device-notifications') === 'true');
       const notificationAudioContext = useRef(null);
@@ -1723,6 +1725,8 @@
         const firstName = cleanName.includes(',') ? cleanName.slice(cleanName.indexOf(',') + 1).trim() : cleanName;
         return firstName.split(/\s+/)[0] || 'User';
       };
+      const publicChatUnreadStorageKey = userId => `codh-public-chat-unread-${userId}`;
+      const publicChatSnapshotStorageKey = userId => `codh-public-chat-snapshot-${userId}`;
       const formatExchangeRate = rate =>
         new Intl.NumberFormat('en-PH', { maximumSignificantDigits: 6 }).format(rate);
       const welcomeDate = new Intl.DateTimeFormat('en-PH', {
@@ -1747,12 +1751,41 @@
           [employee.name, employee.email, employee.dept]
             .some(value => String(value || '').toLocaleLowerCase().includes(normalizedLeaveCreditEmployeeFilter))
         );
+
       useEffect(() => {
-        if (!isAuthenticated || !currentUser || (!isPublicChatOpen && !deviceNotificationsEnabled)) return;
+        if (!currentUser) {
+          publicChatUnreadCountRef.current = 0;
+          setPublicChatUnreadCount(0);
+          publicChatNotificationSnapshot.current = { userId: null, ids: new Set() };
+          return;
+        }
+
+        const storedCount = Number(localStorage.getItem(publicChatUnreadStorageKey(currentUser.id)));
+        const unreadCount = Number.isSafeInteger(storedCount) && storedCount > 0 ? storedCount : 0;
+        publicChatUnreadCountRef.current = unreadCount;
+        setPublicChatUnreadCount(unreadCount);
+
+        const storedSnapshot = localStorage.getItem(publicChatSnapshotStorageKey(currentUser.id));
+        if (!storedSnapshot) {
+          publicChatNotificationSnapshot.current = { userId: null, ids: new Set() };
+          return;
+        }
+        try {
+          const storedIds = JSON.parse(storedSnapshot);
+          publicChatNotificationSnapshot.current = Array.isArray(storedIds) && storedIds.every(id => typeof id === 'string')
+            ? { userId: currentUser.id, ids: new Set(storedIds) }
+            : { userId: null, ids: new Set() };
+        } catch (error) {
+          console.warn('Could not read the public chat notification snapshot:', error);
+          publicChatNotificationSnapshot.current = { userId: null, ids: new Set() };
+        }
+      }, [currentUser?.id]);
+
+      useEffect(() => {
+        if (!isAuthenticated || !currentUser) return;
         let isCancelled = false;
         let isLoading = false;
         let hasLoaded = false;
-        let hasInitializedSnapshot = false;
 
         const loadMessages = async () => {
           if (isLoading) return;
@@ -1766,15 +1799,19 @@
             if (isCancelled) return;
             const messageIds = new Set(result.messages.map(message => message.id));
             const previousSnapshot = publicChatNotificationSnapshot.current;
-            if (!hasInitializedSnapshot || previousSnapshot.userId !== currentUser.id) {
-              publicChatNotificationSnapshot.current = { userId: currentUser.id, ids: messageIds };
-              hasInitializedSnapshot = true;
-            } else {
-              const incomingMessages = result.messages.filter(message =>
+            const incomingMessages = previousSnapshot.userId === currentUser.id
+              ? result.messages.filter(message =>
                 !previousSnapshot.ids.has(message.id) && message.senderId !== currentUser.id
-              );
-              publicChatNotificationSnapshot.current = { userId: currentUser.id, ids: messageIds };
-              if (deviceNotificationsEnabled && !isPublicChatOpen) {
+              )
+              : [];
+            publicChatNotificationSnapshot.current = { userId: currentUser.id, ids: messageIds };
+            localStorage.setItem(publicChatSnapshotStorageKey(currentUser.id), JSON.stringify([...messageIds]));
+            if (!isPublicChatOpen && incomingMessages.length > 0) {
+              const nextUnreadCount = publicChatUnreadCountRef.current + incomingMessages.length;
+              publicChatUnreadCountRef.current = nextUnreadCount;
+              setPublicChatUnreadCount(nextUnreadCount);
+              localStorage.setItem(publicChatUnreadStorageKey(currentUser.id), String(nextUnreadCount));
+              if (deviceNotificationsEnabled) {
                 incomingMessages.forEach(message => {
                   showDeviceNotification(
                     `${publicChatFirstName(message.senderName)} sent a public message`,
@@ -1813,6 +1850,13 @@
           window.clearInterval(timer);
         };
       }, [isAuthenticated, currentUser?.id, isPublicChatOpen, deviceNotificationsEnabled]);
+
+      useEffect(() => {
+        if (!isAuthenticated || !currentUser || !isPublicChatOpen) return;
+        publicChatUnreadCountRef.current = 0;
+        setPublicChatUnreadCount(0);
+        localStorage.setItem(publicChatUnreadStorageKey(currentUser.id), '0');
+      }, [isAuthenticated, currentUser?.id, isPublicChatOpen]);
 
       useEffect(() => {
         if (!isPublicChatOpen || !publicChatScrollRef.current) return;
@@ -3986,7 +4030,11 @@
             <>
               <button
                 type="button"
-                aria-label={isPublicChatOpen ? 'Close public chat' : 'Open public chat'}
+                aria-label={isPublicChatOpen
+                  ? 'Close public chat'
+                  : publicChatUnreadCount > 0
+                    ? `Open public chat, ${publicChatUnreadCount} unread messages`
+                    : 'Open public chat'}
                 aria-expanded={isPublicChatOpen}
                 title="Drag to move or click to open public chat"
                 onPointerDown={handlePublicChatPointerDown}
@@ -3998,6 +4046,11 @@
                 style={{ right: publicChatPosition.right, bottom: publicChatPosition.bottom }}
               >
                 <Icon name="message-circle" className="h-6 w-6" />
+                {publicChatUnreadCount > 0 && (
+                  <span aria-hidden="true" className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full border-2 border-indigo-600 bg-rose-500 px-1 text-[9px] font-bold leading-none text-white">
+                    {publicChatUnreadCount > 99 ? '99+' : publicChatUnreadCount}
+                  </span>
+                )}
                 <span className="sr-only">Public chat</span>
               </button>
 
