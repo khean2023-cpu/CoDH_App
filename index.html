@@ -1538,20 +1538,26 @@
       const [notifications, setNotifications] = useState([]);
       const [showNotifPanel, setShowNotifPanel] = useState(false);
       const [isPublicChatOpen, setIsPublicChatOpen] = useState(false);
+      const [hidePublicChatButton, setHidePublicChatButton] = useState(() => localStorage.getItem('codh-hide-public-chat-button') === 'true');
       const [publicChatMessages, setPublicChatMessages] = useState([]);
       const [publicChatDraft, setPublicChatDraft] = useState('');
       const [publicChatError, setPublicChatError] = useState('');
       const [publicChatLoading, setPublicChatLoading] = useState(false);
       const [sendingPublicChatMessage, setSendingPublicChatMessage] = useState(false);
+      const [deletingPublicChatMessage, setDeletingPublicChatMessage] = useState(null);
+      const [publicChatTimestampMessageId, setPublicChatTimestampMessageId] = useState(null);
       const [publicChatPosition, setPublicChatPosition] = useState({ right: 24, bottom: 112 });
       const publicChatDragRef = useRef(null);
       const publicChatWasDragged = useRef(false);
       const publicChatScrollRef = useRef(null);
+      const publicChatPressTimer = useRef(null);
+      const publicChatTimeHideTimer = useRef(null);
+      const publicChatNotificationSnapshot = useRef({ userId: null, ids: new Set() });
       const [notificationSoundEnabled, setNotificationSoundEnabled] = useState(false);
       const [deviceNotificationsEnabled, setDeviceNotificationsEnabled] = useState(() => localStorage.getItem('codh-device-notifications') === 'true');
       const notificationAudioContext = useRef(null);
       const notificationSnapshot = useRef({ userId: null, ids: new Set() });
-      const deviceNotificationSnapshot = useRef({ userId: null, ids: new Set(), unreadCount: 0 });
+      const deviceNotificationSnapshot = useRef({ userId: null, unreadIds: new Set() });
       const [leaveCreditDrafts, setLeaveCreditDrafts] = useState({});
       const [savingLeaveCreditUser, setSavingLeaveCreditUser] = useState(null);
       const [leaveCreditEmployeeFilter, setLeaveCreditEmployeeFilter] = useState('');
@@ -1713,6 +1719,11 @@
       const dashboardExchangeCurrencyRows = Object.entries(dashboardExchangeRates?.rates || {})
         .sort(([left], [right]) => left === right ? 0 : left === 'USD' ? -1 : right === 'USD' ? 1 : left.localeCompare(right));
       const publicChatLastMessageId = publicChatMessages[publicChatMessages.length - 1]?.id;
+      const publicChatFirstName = name => {
+        const cleanName = String(name || '').trim();
+        const firstName = cleanName.includes(',') ? cleanName.slice(cleanName.indexOf(',') + 1).trim() : cleanName;
+        return firstName.split(/\s+/)[0] || 'User';
+      };
       const formatExchangeRate = rate =>
         new Intl.NumberFormat('en-PH', { maximumSignificantDigits: 6 }).format(rate);
       const welcomeDate = new Intl.DateTimeFormat('en-PH', {
@@ -1738,7 +1749,7 @@
             .some(value => String(value || '').toLocaleLowerCase().includes(normalizedLeaveCreditEmployeeFilter))
         );
       useEffect(() => {
-        if (!isAuthenticated || !currentUser || !isPublicChatOpen) return;
+        if (!isAuthenticated || !currentUser || (!isPublicChatOpen && !deviceNotificationsEnabled)) return;
         let isCancelled = false;
         let isLoading = false;
         let hasLoaded = false;
@@ -1751,6 +1762,26 @@
             const result = await api('public-chat');
             if (!Array.isArray(result.messages)) {
               throw new Error('Public chat returned an invalid message list.');
+            }
+            const messageIds = new Set(result.messages.map(message => message.id));
+            const previousSnapshot = publicChatNotificationSnapshot.current;
+            if (previousSnapshot.userId !== currentUser.id) {
+              publicChatNotificationSnapshot.current = { userId: currentUser.id, ids: messageIds };
+            } else {
+              const incomingMessages = result.messages.filter(message =>
+                !previousSnapshot.ids.has(message.id) && message.senderId !== currentUser.id
+              );
+              publicChatNotificationSnapshot.current = { userId: currentUser.id, ids: messageIds };
+              if (deviceNotificationsEnabled && !isPublicChatOpen) {
+                incomingMessages.forEach(message => {
+                  showDeviceNotification(
+                    `${publicChatFirstName(message.senderName)} sent a public message`,
+                    message.message,
+                    `public-chat-${message.id}`,
+                    '/?openPublicChat=1',
+                  ).catch(error => console.error('Could not show a public chat notification:', error));
+                });
+              }
             }
             if (!isCancelled) {
               setPublicChatMessages(previous => {
@@ -1774,17 +1805,30 @@
         };
 
         loadMessages();
-        const timer = window.setInterval(loadMessages, 5000);
+        const timer = window.setInterval(loadMessages, isPublicChatOpen ? 5000 : 15000);
         return () => {
           isCancelled = true;
           window.clearInterval(timer);
         };
-      }, [isAuthenticated, currentUser?.id, isPublicChatOpen]);
+      }, [isAuthenticated, currentUser?.id, isPublicChatOpen, deviceNotificationsEnabled]);
 
       useEffect(() => {
         if (!isPublicChatOpen || !publicChatScrollRef.current) return;
         publicChatScrollRef.current.scrollTop = publicChatScrollRef.current.scrollHeight;
       }, [isPublicChatOpen, publicChatLastMessageId]);
+
+      useEffect(() => {
+        if (!isAuthenticated || !currentUser) return;
+        const url = new URL(window.location.href);
+        const openPublicChat = url.searchParams.get('openPublicChat') === '1';
+        const openNotifications = url.searchParams.get('openNotifications') === '1';
+        if (!openPublicChat && !openNotifications) return;
+        if (openPublicChat) setIsPublicChatOpen(true);
+        if (openNotifications) setShowNotifPanel(true);
+        url.searchParams.delete('openPublicChat');
+        url.searchParams.delete('openNotifications');
+        window.history.replaceState({}, '', `${url.pathname}${url.search}${url.hash}`);
+      }, [isAuthenticated, currentUser?.id]);
 
       useEffect(() => {
         const timer = setInterval(() => setWelcomeClock(new Date()), 1000);
