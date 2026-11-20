@@ -345,6 +345,10 @@
     cursor: pointer;
   }
 
+  .back-page {
+    display: none;
+  }
+
   .print-button:hover {
     background: #e8e8e8;
   }
@@ -383,7 +387,7 @@
   <!-- Main Grid -->
   <table class="main-form">
     <!-- Row 1: Office & Name -->
-    <tr class="approval-row">
+    <tr>
       <td style="width: 42%;">
         <span class="field-label">1. OFFICE/DEPARTMENT</span>
         <input type="text" class="input-plain" id="office">
@@ -589,7 +593,7 @@
     </tr>
 
     <!-- Section 7.A & 7.B -->
-    <tr>
+    <tr class="approval-row">
       <td>
         <span class="field-label">7.A CERTIFICATION OF LEAVE CREDITS</span>
         <div style="text-align: center; font-size: 8pt; margin: 3px 0;">
