@@ -333,7 +333,7 @@
         page-break-after: always;
       }
 
-      .sheet:last-child {
+      .sheet:last-of-type {
         break-after: auto;
         page-break-after: auto;
       }
@@ -530,7 +530,7 @@
           <div class="detail-group">
             <span class="detail-group-title">In case of Special Leave Benefits for Women:</span>
             <div style="font-size: 7.8pt;">
-              (Specify Illness) <input type="text" style="width: 65%;" />
+              (Specify Illness) <input type="text" id="women-illness" style="width: 65%;" />
               <input type="text" class="full-input" />
             </div>
           </div>
@@ -835,6 +835,9 @@
     const sickTreatment = params.get('sickTreatment');
     if (sickTreatment === 'In Hospital' || sickTreatment === 'Out Patient') {
       setCheckedDetail('Sick Leave', sickTreatment, params.get('illness'));
+    }
+    if (params.get('leaveType') === 'Special Leave Benefits for Women') {
+      setValue('women-illness', params.get('illness'));
     }
 
     const studyPurposes = (params.get('studyPurposes') || '').split(',').map(value => value.trim()).filter(Boolean);
