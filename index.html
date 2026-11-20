@@ -1753,7 +1753,13 @@
               throw new Error('Public chat returned an invalid message list.');
             }
             if (!isCancelled) {
-              setPublicChatMessages(result.messages);
+              setPublicChatMessages(previous => {
+                const previousLastMessageId = previous[previous.length - 1]?.id;
+                const latestMessageId = result.messages[result.messages.length - 1]?.id;
+                return previous.length === result.messages.length && previousLastMessageId === latestMessageId
+                  ? previous
+                  : result.messages;
+              });
               setPublicChatError('');
             }
           } catch (error) {
