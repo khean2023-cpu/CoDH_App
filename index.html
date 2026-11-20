@@ -11,7 +11,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="CoDH App">
   <meta name="application-name" content="CoDH App">
-  <meta name="app-version" content="1.1">
+  <meta name="app-version" content="1.2">
   <script>
     (() => {
       document.documentElement.classList.add('app-launching');
@@ -1538,7 +1538,6 @@
       const [notifications, setNotifications] = useState([]);
       const [showNotifPanel, setShowNotifPanel] = useState(false);
       const [isPublicChatOpen, setIsPublicChatOpen] = useState(false);
-      const [hidePublicChatButton, setHidePublicChatButton] = useState(() => localStorage.getItem('codh-hide-public-chat-button') === 'true');
       const [publicChatMessages, setPublicChatMessages] = useState([]);
       const [publicChatDraft, setPublicChatDraft] = useState('');
       const [publicChatError, setPublicChatError] = useState('');
@@ -1861,6 +1860,10 @@
       useEffect(() => {
         const timer = setInterval(() => setWelcomeClock(new Date()), 1000);
         return () => clearInterval(timer);
+      }, []);
+
+      useEffect(() => {
+        localStorage.removeItem('codh-hide-public-chat-button');
       }, []);
 
       useEffect(() => {
@@ -3525,24 +3528,7 @@
         }
         localStorage.setItem('codh-device-notifications', 'false');
         setDeviceNotificationsEnabled(false);
-        if (hidePublicChatButton) {
-          localStorage.setItem('codh-hide-public-chat-button', 'false');
-          setHidePublicChatButton(false);
-          triggerToast('Device notifications disabled. The public chat button is visible again.');
-        } else {
-          triggerToast('Device notifications disabled.');
-        }
-      };
-
-      const toggleHidePublicChatButton = async () => {
-        if (!hidePublicChatButton && !deviceNotificationsEnabled) {
-          const enabled = await requestDeviceNotifications();
-          if (!enabled) return;
-        }
-        const nextHidden = !hidePublicChatButton;
-        localStorage.setItem('codh-hide-public-chat-button', String(nextHidden));
-        setHidePublicChatButton(nextHidden);
-        if (nextHidden) setIsPublicChatOpen(false);
+        triggerToast('Device notifications disabled.');
       };
 
       const createLeaveCreditDraft = employee => Object.fromEntries(
@@ -3998,24 +3984,22 @@
 
           {isAuthenticated && currentUser && (
             <>
-              {!hidePublicChatButton && (
-                <button
-                  type="button"
-                  aria-label={isPublicChatOpen ? 'Close public chat' : 'Open public chat'}
-                  aria-expanded={isPublicChatOpen}
-                  title="Drag to move or click to open public chat"
-                  onPointerDown={handlePublicChatPointerDown}
-                  onPointerMove={handlePublicChatPointerMove}
-                  onPointerUp={handlePublicChatPointerUp}
-                  onPointerCancel={handlePublicChatPointerCancel}
-                  onClick={handlePublicChatToggle}
-                  className="fixed z-[35] flex h-14 w-14 touch-none cursor-grab items-center justify-center rounded-full border border-indigo-300/30 bg-indigo-600 text-white shadow-xl shadow-indigo-950/50 transition-colors hover:bg-indigo-500 active:cursor-grabbing"
-                  style={{ right: publicChatPosition.right, bottom: publicChatPosition.bottom }}
-                >
-                  <Icon name="message-circle" className="h-6 w-6" />
-                  <span className="sr-only">Public chat</span>
-                </button>
-              )}
+              <button
+                type="button"
+                aria-label={isPublicChatOpen ? 'Close public chat' : 'Open public chat'}
+                aria-expanded={isPublicChatOpen}
+                title="Drag to move or click to open public chat"
+                onPointerDown={handlePublicChatPointerDown}
+                onPointerMove={handlePublicChatPointerMove}
+                onPointerUp={handlePublicChatPointerUp}
+                onPointerCancel={handlePublicChatPointerCancel}
+                onClick={handlePublicChatToggle}
+                className="fixed z-[35] flex h-14 w-14 touch-none cursor-grab items-center justify-center rounded-full border border-indigo-300/30 bg-indigo-600 text-white shadow-xl shadow-indigo-950/50 transition-colors hover:bg-indigo-500 active:cursor-grabbing"
+                style={{ right: publicChatPosition.right, bottom: publicChatPosition.bottom }}
+              >
+                <Icon name="message-circle" className="h-6 w-6" />
+                <span className="sr-only">Public chat</span>
+              </button>
 
               {isPublicChatOpen && (
                 <section
@@ -4260,27 +4244,6 @@
                               {notificationSoundEnabled ? 'Sound on' : 'Enable sound'}
                             </button>
                           </div>
-                        </div>
-                        <div className="relative mt-3 flex flex-wrap items-center justify-between gap-2">
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setShowNotifPanel(false);
-                              setIsPublicChatOpen(true);
-                            }}
-                            className="rounded-lg border border-indigo-400/30 bg-indigo-400/10 px-2.5 py-1.5 text-[10px] font-semibold text-indigo-200 hover:bg-indigo-400/20"
-                          >
-                            Open public chat
-                          </button>
-                          <label className="flex cursor-pointer items-center gap-2 text-[10px] font-medium text-slate-300">
-                            <input
-                              type="checkbox"
-                              checked={hidePublicChatButton}
-                              onChange={toggleHidePublicChatButton}
-                              className="h-3.5 w-3.5 rounded border-slate-600 bg-slate-900 text-indigo-500 focus:ring-indigo-400"
-                            />
-                            Hide floating chat icon
-                          </label>
                         </div>
                       </div>
                       <div className="min-h-0 flex-1 space-y-2 overflow-y-auto overscroll-contain p-3">
