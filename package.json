@@ -9,6 +9,7 @@
     "build": "npm run typecheck && node scripts/build.mjs",
     "dev": "node local-demo-server.js",
     "typecheck": "tsc --noEmit",
+    "deploy:vercel": "npx --yes vercel@latest pull --yes --environment=production && npx --yes vercel@latest build --prod && npx --yes vercel@latest deploy --prebuilt --prod",
     "android:sync": "npm run build && cap sync android",
     "android:build": "npm run android:sync && cd android && gradlew.bat assembleDebug"
   },
