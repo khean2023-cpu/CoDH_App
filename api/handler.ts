@@ -15,6 +15,7 @@ import type {
   LeaveCreditKey,
   NotificationDocument,
   ProfileMediaDocument,
+  PublicChatMessageDocument,
   RequestDocument,
   SessionDocument,
   SpaceInvadersScoreDocument,
@@ -478,6 +479,7 @@ export const handleApi = async (req: Request, apiPath?: string) => {
     const archives = db.collection<ArchiveDocument>("archives");
     const attachments = db.collection<AttachmentDocument>("attachments");
     const profileMedia = db.collection<ProfileMediaDocument>("profileMedia");
+    const publicChatMessages = db.collection<PublicChatMessageDocument>("publicChatMessages");
     const spaceInvadersScores = db.collection<SpaceInvadersScoreDocument>("spaceInvadersScores");
     const sessions = db.collection<SessionDocument>("sessions");
 
@@ -729,6 +731,34 @@ export const handleApi = async (req: Request, apiPath?: string) => {
     }
 
     const body = ["POST", "PUT", "PATCH"].includes(method) ? await req.json().catch(() => ({})) : {};
+
+    if (resource === "public-chat") {
+      if (method === "GET" && !id) {
+        const messages = await publicChatMessages
+          .find()
+          .sort({ createdAt: -1, id: -1 })
+          .limit(100)
+          .toArray();
+        return json({ messages: messages.reverse() });
+      }
+
+      if (method === "POST" && !id) {
+        const message = typeof body.message === "string" ? body.message.trim() : "";
+        if (!message) return error("Type a message before sending.");
+        if (message.length > 500) return error("Messages must be 500 characters or fewer.");
+
+        const created: PublicChatMessageDocument = {
+          id: `CHAT-${Date.now()}-${randomBytes(4).toString("hex")}`,
+          senderId: actor.id,
+          senderName: actor.name,
+          senderRole: actor.role,
+          message,
+          createdAt: new Date(),
+        };
+        await publicChatMessages.insertOne(created);
+        return json(created, 201);
+      }
+    }
 
     // GET /api/data — everything the dashboard needs
     if (resource === "data" && method === "GET") {

@@ -4,6 +4,7 @@ import type {
   AttachmentDocument,
   NotificationDocument,
   ProfileMediaDocument,
+  PublicChatMessageDocument,
   RequestDocument,
   SessionDocument,
   SpaceInvadersScoreDocument,
@@ -17,6 +18,7 @@ type CollectionName =
   | "archives"
   | "attachments"
   | "profileMedia"
+  | "publicChatMessages"
   | "spaceInvadersScores"
   | "sessions";
 
@@ -47,6 +49,7 @@ export interface Collection<T extends object> {
 
 export interface CollectionCursor<T extends object> {
   sort(fields: Record<string, 1 | -1>): CollectionCursor<T>;
+  limit(count: number): CollectionCursor<T>;
   toArray(): Promise<T[]>;
 }
 
@@ -110,6 +113,12 @@ const definitions: Record<CollectionName, CollectionDefinition> = {
   profileMedia: {
     table: "profile_media",
     columns: ["id", "userId", "mediaType", "fileName", "contentType", "size", "blobKey", "createdAt"],
+    jsonColumns: [],
+    dateColumns: ["createdAt"],
+  },
+  publicChatMessages: {
+    table: "public_chat_messages",
+    columns: ["id", "senderId", "senderName", "senderRole", "message", "createdAt"],
     jsonColumns: [],
     dateColumns: ["createdAt"],
   },
@@ -241,12 +250,21 @@ const schemaStatements = [
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     expires_at TIMESTAMPTZ NOT NULL
   )`,
+  `CREATE TABLE IF NOT EXISTS public_chat_messages (
+    id TEXT PRIMARY KEY,
+    sender_id TEXT NOT NULL,
+    sender_name TEXT NOT NULL,
+    sender_role TEXT NOT NULL,
+    message TEXT NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+  )`,
   "CREATE INDEX IF NOT EXISTS requests_applicant_idx ON requests (applicant_id)",
   "CREATE INDEX IF NOT EXISTS notifications_user_idx ON notifications (user_id)",
   "CREATE INDEX IF NOT EXISTS attachments_request_idx ON attachments (request_id)",
   "CREATE INDEX IF NOT EXISTS profile_media_user_idx ON profile_media (user_id)",
   "CREATE INDEX IF NOT EXISTS profile_media_user_type_idx ON profile_media (user_id, media_type)",
   "CREATE INDEX IF NOT EXISTS sessions_expiry_idx ON sessions (expires_at)",
+  "CREATE INDEX IF NOT EXISTS public_chat_messages_created_idx ON public_chat_messages (created_at DESC, id DESC)",
 ];
 
 const toSnakeCase = (value: string) => value.replace(/[A-Z]/g, letter => `_${letter.toLowerCase()}`);
@@ -481,6 +499,7 @@ class PostgresCollection<T extends object> implements Collection<T> {
 
 class PostgresCursor<T extends object> implements CollectionCursor<T> {
   private sortFields?: Record<string, 1 | -1>;
+  private limitCount?: number;
 
   constructor(
     private readonly collection: PostgresCollection<T>,
@@ -492,8 +511,13 @@ class PostgresCursor<T extends object> implements CollectionCursor<T> {
     return this;
   }
 
+  limit(count: number) {
+    this.limitCount = Number.isFinite(count) ? Math.max(1, Math.floor(count)) : 1;
+    return this;
+  }
+
   toArray() {
-    return this.collection.select(this.filter, this.sortFields);
+    return this.collection.select(this.filter, this.sortFields, this.limitCount);
   }
 }
 

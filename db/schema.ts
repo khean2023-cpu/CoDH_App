@@ -155,6 +155,15 @@ export interface SpaceInvadersScoreDocument {
   updatedAt: Date;
 }
 
+export interface PublicChatMessageDocument {
+  id: string;
+  senderId: string;
+  senderName: string;
+  senderRole: string;
+  message: string;
+  createdAt: Date;
+}
+
 export interface SessionDocument {
   tokenHash: string;
   userId: string;

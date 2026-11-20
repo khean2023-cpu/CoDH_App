@@ -51,6 +51,7 @@ const initialState = () => ({
   requests: [],
   notifications: [],
   archives: [],
+  publicChatMessages: [],
   spaceInvadersScores: [],
   attachments: {},
   profileMedia: {},
@@ -58,6 +59,7 @@ const initialState = () => ({
 
 const state = existsSync(dataFile) ? JSON.parse(readFileSync(dataFile, "utf8")) : initialState();
 state.profileMedia ||= {};
+state.publicChatMessages ||= [];
 state.spaceInvadersScores ||= [];
 const saveState = () => writeFileSync(dataFile, JSON.stringify(state, null, 2));
 let migratedState = false;
@@ -329,6 +331,36 @@ const server = createServer(async (req, res) => {
           "X-Content-Type-Options": "nosniff",
         });
         return res.end(Buffer.from(attachment.bytes, "base64"));
+      }
+
+      if (resource === "public-chat" && req.method === "GET" && !id) {
+        return json(res, { messages: state.publicChatMessages.slice(-100) });
+      }
+
+      if (resource === "public-chat" && req.method === "POST" && !id) {
+        const body = JSON.parse((await readBody(req)).toString("utf8") || "{}");
+        const senderId = String(body.senderId || "");
+        const sender = state.users.find(user => user.id === senderId && user.status === "Approved");
+        if (!sender) return fail(res, "Sign in with an approved account to use public chat.", 401);
+
+        const message = typeof body.message === "string" ? body.message.trim() : "";
+        if (!message) return fail(res, "Type a message before sending.");
+        if (message.length > 500) return fail(res, "Messages must be 500 characters or fewer.");
+
+        const created = {
+          id: `CHAT-${Date.now()}-${randomBytes(4).toString("hex")}`,
+          senderId: sender.id,
+          senderName: sender.name,
+          senderRole: sender.role,
+          message,
+          createdAt: new Date().toISOString(),
+        };
+        state.publicChatMessages.push(created);
+        if (state.publicChatMessages.length > 500) {
+          state.publicChatMessages.splice(0, state.publicChatMessages.length - 500);
+        }
+        saveState();
+        return json(res, created, 201);
       }
 
       if (resource === "session" && req.method === "GET") {
