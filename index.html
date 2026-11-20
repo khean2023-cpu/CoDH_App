@@ -66,6 +66,18 @@
       -webkit-overflow-scrolling: touch;
     }
 
+    @media (max-width: 1023px) {
+      .app-shell > main {
+        padding-bottom: 8.5rem !important;
+      }
+    }
+
+    @media (max-width: 1023px) and (max-height: 640px) {
+      .app-shell > main {
+        padding-bottom: 9.5rem !important;
+      }
+    }
+
     .app-shell > main.dashboard-main {
       overflow-y: auto;
     }
@@ -431,13 +443,18 @@
     .tetris-game-panel.is-fullscreen {
       position: fixed;
       z-index: 100;
-      inset: 0;
+      top: 0;
+      right: 0;
+      bottom: 0;
+      left: 0;
       width: 100%;
       height: 100vh;
+      height: -webkit-fill-available;
       height: 100dvh;
-      max-height: 100dvh;
+      max-height: none;
       padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
       overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
       overscroll-behavior: contain;
       border: 0;
       border-radius: 0;
@@ -539,13 +556,18 @@
       .tetris-game-panel.is-fullscreen {
         position: fixed;
         z-index: 100;
-        inset: 0;
+        top: 0;
+        right: 0;
+        bottom: 0;
+        left: 0;
         width: 100%;
         height: 100vh;
+        height: -webkit-fill-available;
         height: 100dvh;
-        max-height: 100dvh;
+        max-height: none;
         padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
         overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
         overscroll-behavior: contain;
         border: 0;
         border-radius: 0;
@@ -607,13 +629,18 @@
       .tetris-game-panel.is-fullscreen {
         position: fixed;
         z-index: 100;
-        inset: 0;
+        top: 0;
+        right: 0;
+        bottom: 0;
+        left: 0;
         width: 100%;
         height: 100vh;
+        height: -webkit-fill-available;
         height: 100dvh;
-        max-height: 100dvh;
+        max-height: none;
         padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
         overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
         overscroll-behavior: contain;
         border: 0;
         border-radius: 0;
@@ -3155,6 +3182,21 @@
         });
       }, [requests, currentUser]);
 
+      const mySubmittedRequests = useMemo(() => {
+        if (currentUser?.role !== 'Employee') return [];
+        return visibleRequests
+          .filter(req => req.applicantId === currentUser.id)
+          .sort((a, b) => new Date(b.dateFiled || b.createdAt || 0) - new Date(a.dateFiled || a.createdAt || 0));
+      }, [visibleRequests, currentUser]);
+
+      const myPendingRequests = useMemo(() =>
+        mySubmittedRequests.filter(req => {
+          const status = req.status || '';
+          if (/approved/i.test(status)) return false;
+          if (/rejected|declined|disapproved|terminated/i.test(status)) return false;
+          return true;
+        }), [mySubmittedRequests]);
+
       const departmentEmployees = useMemo(() => {
         if (currentUser?.role !== 'Department Head') return [];
         const department = currentUser.headOfDept || currentUser.dept;
@@ -3956,7 +3998,23 @@
             >
               <Icon name="plus" className="h-6 w-6" />
             </button>
-            {!isApprover && (
+            {!isApprover && (currentUser.role === 'Employee' ? (
+              <button
+                type="button"
+                onClick={() => handleNavigationClick('my-pending')}
+                aria-label={`Pending requests: ${myPendingRequests.length} pending`}
+                title="Pending requests"
+                aria-current={activeTab === 'my-pending' ? 'page' : undefined}
+                className={`relative mx-auto flex h-11 w-11 items-center justify-center rounded-full transition-colors ${activeTab === 'my-pending' ? 'bg-amber-400/10 text-amber-400' : 'text-slate-400 hover:text-white'}`}
+              >
+                <Icon name="clock" className="h-5 w-5" />
+                {myPendingRequests.length > 0 && (
+                  <span className="absolute right-0.5 top-0.5 min-w-4 rounded-full bg-amber-500 px-1 text-[9px] font-bold leading-4 text-slate-950">
+                    {myPendingRequests.length}
+                  </span>
+                )}
+              </button>
+            ) : (
               <button
                 type="button"
                 onClick={() => handleNavigationClick('profile')}
@@ -3966,7 +4024,7 @@
               >
                 <Icon name="user" className="h-5 w-5" />
               </button>
-            )}
+            ))}
             {currentUser.role === 'Admin' ? (
               <button
                 type="button"
@@ -3996,12 +4054,12 @@
             ) : currentUser.role === 'Employee' ? (
               <button
                 type="button"
-                onClick={() => handleNavigationClick('mini-games')}
-                aria-label="Mini games"
-                aria-current={activeTab === 'mini-games' ? 'page' : undefined}
-                className={`mx-auto flex h-11 w-11 items-center justify-center rounded-full transition-colors ${activeTab === 'mini-games' ? 'bg-amber-400/10 text-amber-400' : 'text-slate-400 hover:text-white'}`}
+                onClick={() => handleNavigationClick('profile')}
+                aria-label="My profile"
+                aria-current={activeTab === 'profile' ? 'page' : undefined}
+                className={`mx-auto flex h-11 w-11 items-center justify-center rounded-full transition-colors ${activeTab === 'profile' ? 'bg-amber-400/10 text-amber-400' : 'text-slate-400 hover:text-white'}`}
               >
-                <Icon name="gamepad-2" className={`h-6 w-6 ${activeTab === 'mini-games' ? '' : 'text-violet-300'}`} />
+                <Icon name="user" className="h-5 w-5" />
               </button>
             ) : currentUser.role === 'Chief of Hospital' ? (
               <button
@@ -4139,19 +4197,6 @@
                           ))}
                         </div>
                       )}
-                    </div>
-                  )}
-                  {!['Admin', 'Human Resource', 'Department Head'].includes(currentUser.role) && (
-                    <div className="border-t border-slate-800 pt-4 space-y-2">
-                      <h3 className="font-bold text-white text-sm">Salary &amp; Payroll</h3>
-                      <p className="text-xs text-slate-400">Check your salary and payroll details on the salary portal.</p>
-                      <button
-                        type="button"
-                        onClick={openSalaryPortal}
-                        className="inline-flex min-h-10 items-center rounded-xl bg-emerald-600 px-4 py-2 text-xs font-bold text-white transition-colors hover:bg-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-400"
-                      >
-                        Open salary portal
-                      </button>
                     </div>
                   )}
                   <div className="flex flex-wrap items-center justify-end gap-2 border-t border-slate-800 pt-4">
@@ -4710,13 +4755,13 @@
                         </button>
                       )}
                     </div>
-                  ) : (
+                  ) : !currentUser.role.includes('Employee') ? (
                     <section className="rounded-2xl border border-amber-500/20 bg-slate-950 p-4">
                       <p className="text-[10px] font-bold uppercase tracking-wider text-amber-300">Awaiting Your Review</p>
                       <p className="mt-2 text-2xl font-black text-white">{requestsForApproval.length}</p>
                       <p className="text-[10px] text-slate-500">requests in your queue</p>
                     </section>
-                  )}
+                  ) : null}
                 </div>
 
               </div>
@@ -4909,6 +4954,67 @@
                     ))}
                   </div>
                 </div>
+              </div>
+            )}
+
+            {/* TAB: MY PENDING REQUESTS (EMPLOYEE) */}
+            {activeTab === 'my-pending' && currentUser.role === 'Employee' && (
+              <div className="space-y-4">
+                <div className="space-y-1">
+                  <h3 className="text-lg font-bold text-white">My Pending Requests</h3>
+                  <p className="text-xs text-slate-400">Track the requests you filed and their current approval status.</p>
+                </div>
+                <div className="bg-slate-950 rounded-2xl border border-slate-800 p-4 sm:p-5 space-y-3">
+                  {myPendingRequests.length === 0 ? (
+                    <div className="py-6 text-center text-slate-500 text-xs">You have no pending requests right now.</div>
+                  ) : (
+                    <div className="divide-y divide-slate-800">
+                      {myPendingRequests.map(req => (
+                        <div key={req.id} className="py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+                          <div className="min-w-0">
+                            <div className="font-bold text-indigo-400">{req.id} — {req.type}{req.subType ? ` (${req.subType})` : ''}</div>
+                            <div className="text-slate-400 mt-0.5 break-words">Filed: {req.dateFiled || '—'}</div>
+                          </div>
+                          <div className="flex flex-wrap items-center gap-2">
+                            <StatusBadge status={req.status || 'Pending'} />
+                            <button
+                              type="button"
+                              onClick={() => setSelectedRequestForModal(req)}
+                              className="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-white font-semibold"
+                            >
+                              View Details
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+                {mySubmittedRequests.length > myPendingRequests.length && (
+                  <div className="bg-slate-950 rounded-2xl border border-slate-800 p-4 sm:p-5 space-y-3">
+                    <h4 className="font-bold text-white text-sm">Resolved Requests</h4>
+                    <div className="divide-y divide-slate-800">
+                      {mySubmittedRequests.filter(req => !myPendingRequests.includes(req)).map(req => (
+                        <div key={req.id} className="py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+                          <div className="min-w-0">
+                            <div className="font-bold text-indigo-400">{req.id} — {req.type}{req.subType ? ` (${req.subType})` : ''}</div>
+                            <div className="text-slate-400 mt-0.5 break-words">Filed: {req.dateFiled || '—'}</div>
+                          </div>
+                          <div className="flex flex-wrap items-center gap-2">
+                            <StatusBadge status={req.status || 'Pending'} />
+                            <button
+                              type="button"
+                              onClick={() => setSelectedRequestForModal(req)}
+                              className="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-white font-semibold"
+                            >
+                              View Details
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             )}
 
