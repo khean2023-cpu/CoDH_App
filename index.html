@@ -4541,7 +4541,7 @@
             )}
 
             {activeTab === 'dashboard' && (
-              <div className={`dashboard-view flex flex-col gap-3 ${canViewPersonalLeaveCredits || canManageLeaveCredits ? 'min-h-full' : 'h-full min-h-0'}`}>
+              <div className="dashboard-view flex flex-col gap-3 min-h-full">
                 <div className="relative shrink-0 overflow-hidden rounded-[1.75rem] border border-slate-800 bg-gradient-to-br from-slate-950 via-slate-900 to-indigo-950/70 p-4 shadow-xl sm:p-6">
                   <div className="pointer-events-none absolute -right-10 -top-14 h-44 w-44 rounded-full bg-indigo-500/10 blur-3xl" />
                   <div className="relative mx-auto max-w-3xl space-y-4">
@@ -4703,7 +4703,7 @@
                   </section>
                 </div>
 
-                <div className={`grid content-start grid-cols-2 gap-3 xl:grid-cols-4 ${canViewPersonalLeaveCredits ? '' : 'min-h-0 flex-1'}`}>
+                <div className="grid content-start grid-cols-2 gap-3 xl:grid-cols-4">
                   <div className="col-span-2 grid grid-cols-2 gap-3 xl:col-span-4" aria-label="Quick links">
                     <button
                       type="button"
