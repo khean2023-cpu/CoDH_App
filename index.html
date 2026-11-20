@@ -2936,7 +2936,7 @@
           commutation: request.leaveDetails?.commutation || ''
         });
 
-        const formUrl = `leaveform1.html?${params.toString()}`;
+        const formUrl = `leaveform.html?${params.toString()}`;
         if (formWindow && !formWindow.closed) {
           formWindow.opener = null;
           formWindow.location.replace(formUrl);

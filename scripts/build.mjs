@@ -25,7 +25,7 @@ for (const file of ["manifest.webmanifest", "sw.js"]) {
   copyFileSync(resolve(root, file), resolve(output, file));
 }
 
-for (const file of ["leaveform1.html", "leaveform2.html", "palawan-seal.jpg"]) {
+for (const file of ["leaveform.html", "leaveform1.html", "leaveform2.html", "palawan-seal.jpg"]) {
   copyFileSync(resolve(root, file), resolve(output, file));
 }
 

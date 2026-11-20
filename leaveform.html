@@ -21,8 +21,8 @@
 
     /* Page Container for Front & Back Sheets */
     .sheet {
-      width: 8.5in;
-      min-height: 11in;
+      width: 8.27in;
+      min-height: 11.69in;
       background: #fff;
       margin: 0 auto 24px auto;
       padding: 0.35in 0.4in;
@@ -313,6 +313,11 @@
 
     /* Print Settings */
     @media print {
+      @page {
+        size: A4 portrait;
+        margin: 5mm;
+      }
+
       body {
         background: none;
         padding: 0;
@@ -322,11 +327,14 @@
         margin: 0;
         box-shadow: none;
         width: 100%;
-        min-height: auto;
+        min-height: 287mm;
+        padding: 5mm;
+        break-after: page;
         page-break-after: always;
       }
 
       .sheet:last-child {
+        break-after: auto;
         page-break-after: auto;
       }
 
@@ -334,6 +342,19 @@
       input[type="date"],
       input[type="number"] {
         background: transparent !important;
+      }
+
+      .approval-row > td {
+        position: relative;
+        padding-bottom: 14mm !important;
+      }
+
+      .approval-row .approver-signature-block {
+        position: absolute;
+        right: 4mm;
+        bottom: 3mm;
+        left: 4mm;
+        margin: 0 !important;
       }
     }
   </style>
@@ -362,22 +383,22 @@
       <tr>
         <td style="width: 38%;">
           <strong>1. OFFICE/DEPARTMENT</strong>
-          <input type="text" class="full-input" placeholder="Enter Office / Department" />
+          <input type="text" class="full-input" id="office" placeholder="Enter Office / Department" />
         </td>
         <td style="width: 62%;">
           <strong>2. NAME :</strong>
           <div class="name-grid">
             <div>
               <span>(Last)</span>
-              <input type="text" placeholder="Last Name" />
+              <input type="text" id="last-name" placeholder="Last Name" />
             </div>
             <div>
               <span>(First)</span>
-              <input type="text" placeholder="First Name" />
+              <input type="text" id="first-name" placeholder="First Name" />
             </div>
             <div>
               <span>(Middle)</span>
-              <input type="text" placeholder="Middle Name" />
+              <input type="text" id="middle-name" placeholder="Middle Name" />
             </div>
           </div>
         </td>
@@ -387,17 +408,17 @@
       <tr>
         <td>
           <strong>3. DATE OF FILING</strong>
-          <input type="text" class="short-input" placeholder="MM/DD/YYYY" />
+          <input type="text" class="short-input" id="date-filed" placeholder="MM/DD/YYYY" />
         </td>
         <td>
           <div style="display: flex; justify-content: space-between; gap: 8px;">
             <div style="flex: 1.4;">
               <strong>4. POSITION</strong>
-              <input type="text" style="width: 65%;" placeholder="Position Title" />
+              <input type="text" id="position" style="width: 65%;" placeholder="Position Title" />
             </div>
             <div style="flex: 1;">
               <strong>5. SALARY</strong>
-              <input type="text" style="width: 60%;" placeholder="SG / Amount" />
+              <input type="text" id="salary" style="width: 60%;" placeholder="SG / Amount" />
             </div>
           </div>
         </td>
@@ -536,15 +557,15 @@
       <tr>
         <td>
           <span class="sub-header">6.C NUMBER OF WORKING DAYS APPLIED FOR</span>
-          <input type="text" class="full-input" placeholder="e.g., 3 working days" />
+          <input type="text" id="working-days" class="full-input" placeholder="e.g., 3 working days" />
           <div style="margin-top: 8px; font-weight: bold; font-size: 7.8pt;">INCLUSIVE DATES</div>
-          <input type="text" class="full-input" placeholder="e.g., November 25–27, 2026" />
+          <input type="text" id="inclusive-dates" class="full-input" placeholder="e.g., November 25–27, 2026" />
         </td>
         <td>
           <span class="sub-header">6.D COMMUTATION</span>
           <ul class="checkbox-list">
-            <li><input type="checkbox" /> <span>Not Requested</span></li>
-            <li><input type="checkbox" /> <span>Requested</span></li>
+            <li><input type="checkbox" id="commutation-not-requested" /> <span>Not Requested</span></li>
+            <li><input type="checkbox" id="commutation-requested" /> <span>Requested</span></li>
           </ul>
           <div class="sig-box" style="margin-top: 24px;">
             <div class="sig-line">(Signature of Applicant)</div>
@@ -553,7 +574,7 @@
       </tr>
 
       <!-- Section 7 Banner -->
-      <tr>
+      <tr class="approval-row">
         <td colspan="2" class="section-banner">7. DETAILS OF ACTION ON APPLICATION</td>
       </tr>
 
@@ -590,7 +611,7 @@
               </tr>
             </tbody>
           </table>
-          <div class="sig-box" style="margin-top: 26px;">
+          <div class="sig-box approver-signature-block" style="margin-top: 26px;">
             <div class="sig-line">
               <div class="official-name">ROLANDO B. BUÑI</div>
               <div class="official-title">PGDH/Provincial Human Resource Management Officer</div>
@@ -611,7 +632,7 @@
           <input type="text" class="full-input" />
           <input type="text" class="full-input" />
 
-          <div class="sig-box" style="margin-top: 38px;">
+          <div class="sig-box approver-signature-block" style="margin-top: 38px;">
             <div class="sig-line">
               <div class="official-name">ARIANE T. CAPALLA, RMT, MD, MMHoA</div>
               <div class="official-title">Chief of Hospital</div>
@@ -762,5 +783,83 @@
     </div>
   </div>
 
+<script>
+  (() => {
+    const params = new URLSearchParams(window.location.search);
+    const setValue = (id, value) => {
+      const field = document.getElementById(id);
+      if (field && value) field.value = value;
+    };
+
+    setValue('office', params.get('office'));
+    setValue('last-name', params.get('lastName'));
+    setValue('first-name', params.get('firstName'));
+    setValue('middle-name', params.get('middleName'));
+    setValue('date-filed', params.get('dateFiled'));
+    setValue('position', params.get('position'));
+    setValue('salary', params.get('salary'));
+    setValue('working-days', params.get('workingDays'));
+    setValue('inclusive-dates', params.get('inclusiveDates'));
+
+    const leaveType = params.get('leaveType')?.trim().toLowerCase();
+    if (leaveType) {
+      const leaveTypeLabel = [...document.querySelectorAll('.leave-type-title')]
+        .find(label => label.textContent.trim().toLowerCase().startsWith(leaveType));
+      const leaveTypeCheckbox = leaveTypeLabel?.closest('li')?.querySelector('input[type="checkbox"]');
+      if (leaveTypeCheckbox) leaveTypeCheckbox.checked = true;
+    }
+
+    const check = id => {
+      const checkbox = document.getElementById(id);
+      if (checkbox) checkbox.checked = true;
+    };
+    const setCheckedDetail = (groupTitle, detail, value) => {
+      if (!value) return;
+      const group = [...document.querySelectorAll('.detail-group')]
+        .find(item => item.querySelector('.detail-group-title')?.textContent.includes(groupTitle));
+      const row = [...(group?.querySelectorAll('li') || [])]
+        .find(item => item.textContent.trim().startsWith(detail));
+      const checkbox = row?.querySelector('input[type="checkbox"]');
+      const input = row?.querySelector('input[type="text"]');
+      if (checkbox) checkbox.checked = true;
+      if (input) input.value = value;
+    };
+
+    const locationType = params.get('locationType');
+    if (locationType === 'Within the Philippines') {
+      setCheckedDetail('Vacation/Special Privilege Leave', 'Within the Philippines', params.get('destination'));
+    } else if (locationType === 'Abroad') {
+      setCheckedDetail('Vacation/Special Privilege Leave', 'Abroad', params.get('destination'));
+    }
+
+    const sickTreatment = params.get('sickTreatment');
+    if (sickTreatment === 'In Hospital' || sickTreatment === 'Out Patient') {
+      setCheckedDetail('Sick Leave', sickTreatment, params.get('illness'));
+    }
+
+    const studyPurposes = (params.get('studyPurposes') || '').split(',').map(value => value.trim()).filter(Boolean);
+    const studyGroup = [...document.querySelectorAll('.detail-group')]
+      .find(item => item.querySelector('.detail-group-title')?.textContent.includes('Study Leave'));
+    for (const row of studyGroup?.querySelectorAll('li') || []) {
+      if (studyPurposes.some(purpose => row.textContent.includes(purpose))) {
+        const checkbox = row.querySelector('input[type="checkbox"]');
+        if (checkbox) checkbox.checked = true;
+      }
+    }
+
+    const otherPurpose = params.get('otherPurpose');
+    const otherPurposeGroup = [...document.querySelectorAll('.detail-group')]
+      .find(item => item.querySelector('.detail-group-title')?.textContent.includes('Other purpose'));
+    for (const row of otherPurposeGroup?.querySelectorAll('li') || []) {
+      if (otherPurpose && row.textContent.includes(otherPurpose)) {
+        const checkbox = row.querySelector('input[type="checkbox"]');
+        if (checkbox) checkbox.checked = true;
+      }
+    }
+
+    if (params.get('commutation') === 'Requested') check('commutation-requested');
+    if (params.get('commutation') === 'Not Requested') check('commutation-not-requested');
+  })();
+</script>
 </body>
 </html>
