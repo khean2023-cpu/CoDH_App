@@ -1537,6 +1537,16 @@
       const [userArchiveCopies, setUserArchiveCopies] = useState([]);
       const [notifications, setNotifications] = useState([]);
       const [showNotifPanel, setShowNotifPanel] = useState(false);
+      const [isPublicChatOpen, setIsPublicChatOpen] = useState(false);
+      const [publicChatMessages, setPublicChatMessages] = useState([]);
+      const [publicChatDraft, setPublicChatDraft] = useState('');
+      const [publicChatError, setPublicChatError] = useState('');
+      const [publicChatLoading, setPublicChatLoading] = useState(false);
+      const [sendingPublicChatMessage, setSendingPublicChatMessage] = useState(false);
+      const [publicChatPosition, setPublicChatPosition] = useState({ right: 24, bottom: 112 });
+      const publicChatDragRef = useRef(null);
+      const publicChatWasDragged = useRef(false);
+      const publicChatScrollRef = useRef(null);
       const [notificationSoundEnabled, setNotificationSoundEnabled] = useState(false);
       const [deviceNotificationsEnabled, setDeviceNotificationsEnabled] = useState(() => localStorage.getItem('codh-device-notifications') === 'true');
       const notificationAudioContext = useRef(null);
@@ -1702,6 +1712,7 @@
         : 'Waiting for data';
       const dashboardExchangeCurrencyRows = Object.entries(dashboardExchangeRates?.rates || {})
         .sort(([left], [right]) => left === right ? 0 : left === 'USD' ? -1 : right === 'USD' ? 1 : left.localeCompare(right));
+      const publicChatLastMessageId = publicChatMessages[publicChatMessages.length - 1]?.id;
       const formatExchangeRate = rate =>
         new Intl.NumberFormat('en-PH', { maximumSignificantDigits: 6 }).format(rate);
       const welcomeDate = new Intl.DateTimeFormat('en-PH', {
@@ -1726,6 +1737,49 @@
           [employee.name, employee.email, employee.dept]
             .some(value => String(value || '').toLocaleLowerCase().includes(normalizedLeaveCreditEmployeeFilter))
         );
+      useEffect(() => {
+        if (!isAuthenticated || !currentUser || !isPublicChatOpen) return;
+        let isCancelled = false;
+        let isLoading = false;
+        let hasLoaded = false;
+
+        const loadMessages = async () => {
+          if (isLoading) return;
+          isLoading = true;
+          if (!hasLoaded) setPublicChatLoading(true);
+          try {
+            const result = await api('public-chat');
+            if (!Array.isArray(result.messages)) {
+              throw new Error('Public chat returned an invalid message list.');
+            }
+            if (!isCancelled) {
+              setPublicChatMessages(result.messages);
+              setPublicChatError('');
+            }
+          } catch (error) {
+            if (!isCancelled) {
+              setPublicChatError(error.message || 'Unable to load public chat.');
+            }
+          } finally {
+            isLoading = false;
+            if (!hasLoaded && !isCancelled) setPublicChatLoading(false);
+            hasLoaded = true;
+          }
+        };
+
+        loadMessages();
+        const timer = window.setInterval(loadMessages, 5000);
+        return () => {
+          isCancelled = true;
+          window.clearInterval(timer);
+        };
+      }, [isAuthenticated, currentUser?.id, isPublicChatOpen]);
+
+      useEffect(() => {
+        if (!isPublicChatOpen || !publicChatScrollRef.current) return;
+        publicChatScrollRef.current.scrollTop = publicChatScrollRef.current.scrollHeight;
+      }, [isPublicChatOpen, publicChatLastMessageId]);
+
       useEffect(() => {
         const timer = setInterval(() => setWelcomeClock(new Date()), 1000);
         return () => clearInterval(timer);
@@ -3399,6 +3453,92 @@
         } finally {
           setSavingLeaveCreditUser(null);
         }
+      };
+
+      const handlePublicChatSubmit = async event => {
+        event.preventDefault();
+        const message = publicChatDraft.trim();
+        if (!message || sendingPublicChatMessage) return;
+        if (message.length > 500) {
+          setPublicChatError('Messages must be 500 characters or fewer.');
+          return;
+        }
+
+        setSendingPublicChatMessage(true);
+        setPublicChatError('');
+        try {
+          const created = await api('public-chat', {
+            method: 'POST',
+            body: { message, senderId: currentUser.id }
+          });
+          setPublicChatMessages(previous => [
+            ...previous.filter(item => item.id !== created.id),
+            created
+          ].slice(-100));
+          setPublicChatDraft('');
+        } catch (error) {
+          setPublicChatError(error.message || 'Unable to send your message.');
+        } finally {
+          setSendingPublicChatMessage(false);
+        }
+      };
+
+      const handlePublicChatPointerDown = event => {
+        if (event.pointerType === 'mouse' && event.button !== 0) return;
+        publicChatDragRef.current = {
+          pointerId: event.pointerId,
+          startX: event.clientX,
+          startY: event.clientY,
+          startRight: publicChatPosition.right,
+          startBottom: publicChatPosition.bottom,
+          moved: false
+        };
+        event.currentTarget.setPointerCapture(event.pointerId);
+      };
+
+      const handlePublicChatPointerMove = event => {
+        const drag = publicChatDragRef.current;
+        if (!drag || drag.pointerId !== event.pointerId) return;
+        const deltaX = event.clientX - drag.startX;
+        const deltaY = event.clientY - drag.startY;
+        if (!drag.moved && (Math.abs(deltaX) > 4 || Math.abs(deltaY) > 4)) {
+          drag.moved = true;
+          publicChatWasDragged.current = true;
+        }
+        if (!drag.moved) return;
+
+        const maxRight = Math.max(8, window.innerWidth - 64);
+        const maxBottom = Math.max(8, window.innerHeight - 64);
+        setPublicChatPosition({
+          right: Math.min(maxRight, Math.max(8, drag.startRight - deltaX)),
+          bottom: Math.min(maxBottom, Math.max(8, drag.startBottom - deltaY))
+        });
+      };
+
+      const handlePublicChatPointerUp = event => {
+        const drag = publicChatDragRef.current;
+        if (!drag || drag.pointerId !== event.pointerId) return;
+        publicChatDragRef.current = null;
+        if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+          event.currentTarget.releasePointerCapture(event.pointerId);
+        }
+        if (drag.moved) {
+          publicChatWasDragged.current = true;
+          window.setTimeout(() => { publicChatWasDragged.current = false; }, 0);
+        }
+      };
+
+      const handlePublicChatPointerCancel = () => {
+        publicChatDragRef.current = null;
+        publicChatWasDragged.current = false;
+      };
+
+      const handlePublicChatToggle = () => {
+        if (publicChatWasDragged.current) {
+          publicChatWasDragged.current = false;
+          return;
+        }
+        setIsPublicChatOpen(open => !open);
       };
 
       const handleOpenNotification = async (notification) => {
