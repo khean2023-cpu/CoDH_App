@@ -16,6 +16,18 @@
         "focus": false
       },
       "problemMatcher": []
+    },
+    {
+      "label": "Manual deploy to Vercel (prebuilt)",
+      "type": "process",
+      "command": "npm",
+      "args": ["run", "deploy:vercel"],
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "focus": true
+      },
+      "problemMatcher": []
     }
   ]
 }

@@ -104,6 +104,16 @@ and profile media.
    are not copied automatically; import them separately if they must remain
    available.
 
+### Manual prebuilt deployment from VS Code
+
+If Git-triggered deployments are blocked by a remote build limit, run **Tasks:
+Run Task → Manual deploy to Vercel (prebuilt)** in VS Code. This task pulls the
+Production settings, builds locally with the Vercel CLI, then uploads the
+prebuilt output. The first run may ask you to authenticate with Vercel. The
+`.vercel` directory stores local project settings and is ignored by Git; do
+not commit it or any deployment credentials. Prebuilding can avoid Vercel's
+remote build step, but cannot bypass account-level deployment or usage limits.
+
 The deployed API uses expiring, HttpOnly sessions. New registrations are
 Employees with no department assignment until an administrator reviews the
 requested role, department, and employment type, assigns the final values, and
