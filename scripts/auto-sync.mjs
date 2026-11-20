@@ -1,5 +1,5 @@
 import { spawnSync } from "node:child_process";
-import { watch } from "node:fs";
+import { readFileSync, watch, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -37,6 +37,16 @@ const requireSynchronizedMain = () => {
 };
 
 const status = () => git(["status", "--porcelain", "--untracked-files=all"]).stdout.trim();
+const bumpAppVersion = () => {
+  const indexPath = resolve(repoRoot, "index.html");
+  const html = readFileSync(indexPath, "utf8");
+  const versionMeta = html.match(/(<meta name="app-version" content=")(\d+)\.(\d+)(")/);
+  if (!versionMeta) throw new Error('Could not find a numeric "major.minor" app version in index.html.');
+  const nextVersion = `${versionMeta[2]}.${Number(versionMeta[3]) + 1}`;
+  const updatedHtml = html.replace(versionMeta[0], `${versionMeta[1]}${nextVersion}${versionMeta[4]}`);
+  writeFileSync(indexPath, updatedHtml, "utf8");
+  console.log(`Bumped app version to ${nextVersion}.`);
+};
 const sensitivePath = path => {
   const normalized = path.replaceAll("\\", "/");
   const segments = normalized.split("/");
@@ -96,6 +106,8 @@ const watcher = watch(repoRoot, { recursive: true }, (_event, fileName) => {
         throw new Error(`Sensitive-looking files were not committed: ${blockedPaths.join(", ")}`);
       }
 
+      bumpAppVersion();
+      git(["add", "--", "index.html"]);
       git(["commit", "-m", `Auto-save from VS Code (${new Date().toISOString()})`]);
       git(["push", "origin", "main"]);
       console.log("Auto-save pushed to origin/main. Vercel will deploy the pushed commit.");

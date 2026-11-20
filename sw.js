@@ -1,6 +1,6 @@
 // CoDH App service worker: makes the app installable and keeps the app shell
 // available when the network is flaky. API calls are never cached.
-const CACHE = 'codh-shell-v3';
+const CACHE = 'codh-shell-v4';
 const SHELL = [
   '/',
   '/manifest.webmanifest',
@@ -58,4 +58,25 @@ self.addEventListener('fetch', (event) => {
       return cached || network;
     })
   );
+});
+
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+  let target;
+  try {
+    target = new URL(event.notification.data?.url || '/', self.location.origin);
+    if (target.origin !== self.location.origin) target = new URL('/', self.location.origin);
+  } catch {
+    target = new URL('/', self.location.origin);
+  }
+
+  event.waitUntil((async () => {
+    const windows = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
+    const appWindow = windows.find(client => new URL(client.url).origin === self.location.origin);
+    if (appWindow) {
+      await appWindow.navigate(target.href);
+      return appWindow.focus();
+    }
+    return self.clients.openWindow(target.href);
+  })());
 });

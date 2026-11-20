@@ -111,8 +111,11 @@ approves the account. Administrators manage all accounts and records; other
 roles are limited to their own data and the requests assigned to their approval
 workflow.
 
-Each build embeds its UTC build timestamp as the app version, displayed below
-the app name, so the version updates automatically on every Vercel deploy.
+The app version is displayed below the app name as a short `major.minor`
+number. The VS Code auto-sync task increments the minor number before each
+automatic commit and push to `main` (for example, `1.0`, `1.1`, `1.2`); Vercel
+deploys the pushed version. Changes pushed outside that auto-sync task do not
+increment the version automatically.
 
 ## Download the Android app
 
