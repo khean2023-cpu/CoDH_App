@@ -11,7 +11,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="CoDH App">
   <meta name="application-name" content="CoDH App">
-  <meta name="app-version" content="1.8">
+  <meta name="app-version" content="1.9">
   <script>
     (() => {
       document.documentElement.classList.add('app-launching');
@@ -1446,6 +1446,8 @@
 
     function App() {
       const appVersion = document.querySelector('meta[name="app-version"]').content;
+      const isIOSDevice = /iPad|iPhone|iPod/.test(window.navigator.userAgent) ||
+        (window.navigator.platform === 'MacIntel' && window.navigator.maxTouchPoints > 1);
       const salaryPortalUrl = 'https://tracking.pgpict.com/';
       const TETRIS_WIDTH = 10;
       const TETRIS_HEIGHT = 20;
@@ -4491,7 +4493,7 @@
 
           <nav
             aria-label="Mobile navigation"
-            className={`fixed inset-x-4 z-40 mx-auto grid max-w-sm ${isApprover || currentUser.role === 'Employee' ? 'grid-cols-5' : 'grid-cols-6'} items-center rounded-full border border-slate-700/70 bg-slate-950/90 px-2 py-2 shadow-2xl shadow-black/40 backdrop-blur-xl lg:hidden`}
+            className={`fixed inset-x-4 z-40 mx-auto grid max-w-sm ${isApprover || currentUser.role === 'Employee' ? 'grid-cols-5' : 'grid-cols-6'} items-center rounded-full border border-slate-700/70 bg-slate-950/90 px-2 py-2 shadow-2xl shadow-black/40 backdrop-blur-xl lg:hidden ${tetrisFullscreen && isIOSDevice ? 'hidden' : ''}`}
             style={{ bottom: 'calc(env(safe-area-inset-bottom) + 0.75rem)' }}
           >
             <button
