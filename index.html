@@ -11,7 +11,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="CoDH App">
   <meta name="application-name" content="CoDH App">
-  <meta name="app-version" content="1.15">
+  <meta name="app-version" content="1.16">
   <script>
     (() => {
       document.documentElement.classList.add('app-launching');
@@ -5098,6 +5098,147 @@
                       </button>
                     </div>
                   </div>
+                )}
+                {activeTab === 'mini-games' && selectedMiniGame === 'solitaire' && (
+                  <section className="overflow-hidden rounded-2xl border border-violet-500/20 bg-gradient-to-br from-slate-950 via-slate-900 to-violet-950/40 shadow-xl">
+                    <div className="flex items-center justify-between gap-3 border-b border-slate-800 px-4 py-4 sm:px-5">
+                      <div>
+                        <h3 className="text-sm font-bold text-white">Solitaire Classic</h3>
+                        <p className="mt-1 text-[11px] text-slate-400">{solitaireGame.moves} moves</p>
+                      </div>
+                      <div className="flex gap-2">
+                        <button type="button" onClick={resetSolitaire} className="h-9 rounded-lg border border-violet-400/30 bg-violet-500/10 px-3 text-[10px] font-bold text-violet-200">
+                          New game
+                        </button>
+                        <button type="button" onClick={() => { setSelectedMiniGame(null); setSolitaireSelected(null); }} className="h-9 rounded-lg border border-slate-700 bg-slate-900 px-3 text-[10px] font-bold text-slate-200">
+                          All games
+                        </button>
+                      </div>
+                    </div>
+                    <div className="p-3 sm:p-5">
+                      <div className="grid grid-cols-7 gap-1.5 sm:gap-3">
+                        <button
+                          type="button"
+                          onClick={drawSolitaireCard}
+                          aria-label="Draw from stock"
+                          className="solitaire-card flex items-center justify-center rounded-lg border border-slate-600 bg-slate-800 text-slate-400"
+                        >
+                          {solitaireGame.stock.length ? (
+                            <span className="text-lg text-violet-300">♠</span>
+                          ) : (
+                            <span className="text-lg">↻</span>
+                          )}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (solitaireGame.waste.length) setSolitaireSelected({ source: 'waste' });
+                          }}
+                          aria-label="Waste pile"
+                          className={`solitaire-card rounded-lg ${
+                            solitaireGame.waste.length
+                              ? `border border-slate-300 bg-white p-1 ${solitaireGame.waste[solitaireGame.waste.length - 1].color === 'red' ? 'text-rose-600' : 'text-slate-950'}`
+                              : 'border border-dashed border-slate-700 bg-slate-950/30'
+                          }`}
+                        >
+                          {solitaireGame.waste.length && (() => {
+                            const card = solitaireGame.waste[solitaireGame.waste.length - 1];
+                            const suit = SOLITAIRE_SUITS.find(item => item.name === card.suit);
+                            return <span className="flex h-full flex-col justify-between text-left text-xs font-bold">
+                              <span>{solitaireRankLabel(card.rank)}{suit.symbol}</span>
+                              <span className="text-center text-xl">{suit.symbol}</span>
+                            </span>;
+                          })()}
+                        </button>
+                        <div />
+                        {SOLITAIRE_SUITS.map(suit => {
+                          const pile = solitaireGame.foundations[suit.name];
+                          const top = pile[pile.length - 1];
+                          return (
+                            <button
+                              key={suit.name}
+                              type="button"
+                              onClick={() => moveSolitaireToFoundation(suit.name)}
+                              aria-label={`${suit.name} foundation`}
+                              className={`solitaire-card rounded-lg border ${top ? 'border-slate-300 bg-white' : 'border-dashed border-slate-700 bg-slate-950/30'} p-1 ${
+                                suit.color === 'red' ? 'text-rose-600' : 'text-slate-950'
+                              }`}
+                            >
+                              {top ? (
+                                <span className="flex h-full flex-col justify-between text-left text-xs font-bold">
+                                  <span>{solitaireRankLabel(top.rank)}{top.symbol}</span>
+                                  <span className="text-center text-xl">{top.symbol}</span>
+                                </span>
+                              ) : <span className="flex h-full items-center justify-center text-xl">{suit.symbol}</span>}
+                            </button>
+                          );
+                        })}
+                      </div>
+
+                      <div className="mt-5 grid grid-cols-7 items-start gap-1.5 sm:gap-3">
+                        {solitaireGame.tableau.map((pile, pileIndex) => (
+                          <div
+                            key={pileIndex}
+                            role="button"
+                            tabIndex={0}
+                            onClick={() => {
+                              if (solitaireSelected) {
+                                moveSolitaireToTableau(pileIndex);
+                              } else if (!pile.length) {
+                                triggerToast('Select a card first.', 'info');
+                              }
+                            }}
+                            className="min-h-28 rounded-lg"
+                          >
+                            {!pile.length && (
+                              <button type="button" onClick={() => moveSolitaireToTableau(pileIndex)} className="solitaire-card w-full rounded-lg border border-dashed border-slate-700 bg-slate-950/30" aria-label="Empty tableau pile" />
+                            )}
+                            {pile.map((card, cardIndex) => {
+                              const suit = SOLITAIRE_SUITS.find(item => item.name === card.suit);
+                              const isSelected = solitaireSelected?.source === 'tableau' &&
+                                solitaireSelected.pileIndex === pileIndex &&
+                                solitaireSelected.cardIndex <= cardIndex;
+                              return (
+                                <button
+                                  key={`${pileIndex}-${cardIndex}`}
+                                  type="button"
+                                  onClick={event => {
+                                    event.stopPropagation();
+                                    if (!card.faceUp) {
+                                      if (cardIndex === pile.length - 1) {
+                                        setSolitaireGame(previous => {
+                                          const tableau = previous.tableau.map(row => [...row]);
+                                          tableau[pileIndex][cardIndex] = { ...tableau[pileIndex][cardIndex], faceUp: true };
+                                          return { ...previous, tableau, moves: previous.moves + 1 };
+                                        });
+                                      }
+                                      setSolitaireSelected(null);
+                                      return;
+                                    }
+                                    if (solitaireSelected) moveSolitaireToTableau(pileIndex);
+                                    else setSolitaireSelected({ source: 'tableau', pileIndex, cardIndex });
+                                  }}
+                                  className={`solitaire-card solitaire-tableau-card relative flex flex-col justify-between rounded-lg p-1 text-left text-xs font-bold ${
+                                    card.faceUp
+                                      ? `border border-slate-300 bg-white ${card.color === 'red' ? 'text-rose-600' : 'text-slate-950'}`
+                                      : 'border border-slate-700 bg-gradient-to-br from-violet-950 to-slate-800 text-violet-300'
+                                  } ${isSelected ? 'ring-2 ring-violet-400 ring-offset-1 ring-offset-slate-950' : ''}`}
+                                  aria-label={card.faceUp ? `${solitaireRankLabel(card.rank)} of ${card.suit}` : 'Face-down card'}
+                                >
+                                  {card.faceUp ? (
+                                    <>
+                                      <span>{solitaireRankLabel(card.rank)}{suit.symbol}</span>
+                                      <span className="text-center text-xl">{suit.symbol}</span>
+                                    </>
+                                  ) : <span className="m-auto text-lg">◆</span>}
+                                </button>
+                              );
+                            })}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </section>
                 )}
                 {activeTab === 'mini-games' && selectedMiniGame === 'tetris' && (
                   <section className={`tetris-game-panel overflow-hidden rounded-2xl border border-cyan-500/20 bg-gradient-to-br from-slate-950 via-slate-900 to-indigo-950/60 shadow-xl ${tetrisFullscreen ? 'is-fullscreen' : ''}`}>
