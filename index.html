@@ -11,7 +11,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="CoDH App">
   <meta name="application-name" content="CoDH App">
-  <meta name="app-version" content="1.12">
+  <meta name="app-version" content="1.13">
   <script>
     (() => {
       document.documentElement.classList.add('app-launching');
@@ -1702,11 +1702,15 @@
       }).format(welcomeClock));
       const welcomeGreeting = welcomeHour < 12 ? 'Good morning' : welcomeHour < 18 ? 'Good afternoon' : 'Good evening';
       const currentMonthBounds = (() => {
-        const now = new Date();
-        const year = now.getFullYear();
-        const month = now.getMonth();
+        const nowParts = new Intl.DateTimeFormat('en-PH', {
+          timeZone: 'Asia/Manila',
+          year: 'numeric',
+          month: '2-digit'
+        }).formatToParts(welcomeClock);
+        const year = Number(nowParts.find(part => part.type === 'year')?.value);
+        const month = Number(nowParts.find(part => part.type === 'month')?.value) - 1;
         const monthValue = `${year}-${String(month + 1).padStart(2, '0')}`;
-        const lastDay = new Date(year, month + 1, 0).getDate();
+        const lastDay = new Date(Date.UTC(year, month + 1, 0)).getUTCDate();
         return {
           monthValue,
           min: `${monthValue}-01`,
