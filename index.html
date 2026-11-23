@@ -11,7 +11,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="CoDH App">
   <meta name="application-name" content="CoDH App">
-  <meta name="app-version" content="1.13">
+  <meta name="app-version" content="1.14">
   <script>
     (() => {
       document.documentElement.classList.add('app-launching');
@@ -622,6 +622,49 @@
       .tetris-game-panel.is-fullscreen .tetris-game-instructions,
       .tetris-game-panel.is-fullscreen .tetris-game-level-note {
         display: none;
+      }
+
+      .tetris-game-panel.is-fullscreen .tetris-game-controls {
+        display: grid;
+        grid-template-columns: repeat(5, minmax(56px, 1fr));
+        gap: 0.375rem;
+        width: 100%;
+        max-width: 360px;
+      }
+
+      .tetris-game-panel.is-fullscreen .tetris-game-controls button {
+        height: 58px;
+        min-width: 56px;
+        width: 100%;
+        padding-left: 0;
+        padding-right: 0;
+        touch-action: manipulation;
+        user-select: none;
+        -webkit-tap-highlight-color: transparent;
+      }
+
+      .tetris-game-panel.is-fullscreen .tetris-game-status button {
+        height: 48px;
+        min-width: 88px;
+      }
+    }
+
+    @media (max-width: 375px), (max-height: 700px) {
+      .app-shell > main {
+        padding: 0.625rem 0.625rem 8.75rem;
+      }
+
+      .tetris-game-panel.is-fullscreen .tetris-game-board {
+        width: min(100%, calc((100dvh - 190px) / 2), calc(100vw - 16px));
+      }
+
+      .tetris-game-panel.is-fullscreen .tetris-game-controls {
+        max-width: 320px;
+      }
+
+      .tetris-game-panel.is-fullscreen .tetris-game-controls button {
+        height: 54px;
+        min-width: 52px;
       }
     }
 
@@ -1503,6 +1546,46 @@
       const rotateTetrisShape = shape =>
         shape[0].map((_, column) => shape.map(row => row[column]).reverse());
 
+      const SOLITAIRE_SUITS = [
+        { symbol: '♠', name: 'spades', color: 'black' },
+        { symbol: '♥', name: 'hearts', color: 'red' },
+        { symbol: '♦', name: 'diamonds', color: 'red' },
+        { symbol: '♣', name: 'clubs', color: 'black' }
+      ];
+      const createSolitaireGame = () => {
+        const deck = SOLITAIRE_SUITS.flatMap(suit =>
+          Array.from({ length: 13 }, (_, index) => ({
+            rank: index + 1,
+            suit: suit.name,
+            symbol: suit.symbol,
+            color: suit.color,
+            faceUp: false
+          }))
+        );
+        for (let i = deck.length - 1; i > 0; i -= 1) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [deck[i], deck[j]] = [deck[j], deck[i]];
+        }
+        const tableau = Array.from({ length: 7 }, () => []);
+        let deckIndex = 0;
+        for (let pileIndex = 0; pileIndex < 7; pileIndex += 1) {
+          for (let cardIndex = 0; cardIndex <= pileIndex; cardIndex += 1) {
+            const card = deck[deckIndex++];
+            tableau[pileIndex].push({ ...card, faceUp: cardIndex === pileIndex });
+          }
+        }
+        return {
+          stock: deck.slice(deckIndex).map(card => ({ ...card, faceUp: false })),
+          waste: [],
+          tableau,
+          foundations: { spades: [], hearts: [], diamonds: [], clubs: [] },
+          moves: 0
+        };
+      };
+      const solitaireRankLabel = rank => (
+        rank === 1 ? 'A' : rank === 11 ? 'J' : rank === 12 ? 'Q' : rank === 13 ? 'K' : String(rank)
+      );
+
       const [employees, setEmployees] = useState([]);
       const hasHumanResourceDepartmentHead = employees.some(user =>
         user.status === 'Approved' && isHumanResourceDepartmentHead(user)
@@ -1625,6 +1708,109 @@
         board: createTetrisBoard(), piece: null, nextPiece: null, score: 0, lines: 0,
         level: 1, finished: false
       });
+      const [solitaireGame, setSolitaireGame] = useState(createSolitaireGame);
+      const [solitaireSelected, setSolitaireSelected] = useState(null);
+      const resetSolitaire = () => {
+        setSolitaireGame(createSolitaireGame());
+        setSolitaireSelected(null);
+      };
+      const drawSolitaireCard = () => {
+        setSolitaireGame(previous => {
+          if (previous.stock.length) {
+            const stock = [...previous.stock];
+            const card = { ...stock.pop(), faceUp: true };
+            return { ...previous, stock, waste: [...previous.waste, card], moves: previous.moves + 1 };
+          }
+          if (previous.waste.length) {
+            const stock = previous.waste.slice().reverse().map(card => ({ ...card, faceUp: false }));
+            return { ...previous, stock, waste: [], moves: previous.moves + 1 };
+          }
+          return previous;
+        });
+        setSolitaireSelected(null);
+      };
+      const canPlaceSolitaireOnTableau = (card, targetPile) => {
+        if (!targetPile.length) return card.rank === 13;
+        const target = targetPile[targetPile.length - 1];
+        return target.faceUp && target.rank === card.rank + 1 && target.color !== card.color;
+      };
+      const getSolitaireSelectionCards = () => {
+        if (!solitaireSelected) return [];
+        if (solitaireSelected.source === 'waste') {
+          return solitaireGame.waste.length ? [solitaireGame.waste[solitaireGame.waste.length - 1]] : [];
+        }
+        const pile = solitaireGame.tableau[solitaireSelected.pileIndex] || [];
+        return pile.slice(solitaireSelected.cardIndex);
+      };
+      const moveSolitaireToTableau = targetPileIndex => {
+        if (!solitaireSelected) return;
+        const cards = getSolitaireSelectionCards();
+        if (!cards.length) return;
+        const targetPile = solitaireGame.tableau[targetPileIndex];
+        if (!canPlaceSolitaireOnTableau(cards[0], targetPile)) {
+          setSolitaireSelected(null);
+          triggerToast('That card cannot be placed there.', 'error');
+          return;
+        }
+        setSolitaireGame(previous => {
+          const next = {
+            ...previous,
+            stock: [...previous.stock],
+            waste: [...previous.waste],
+            tableau: previous.tableau.map(pile => [...pile]),
+            foundations: Object.fromEntries(
+              Object.entries(previous.foundations).map(([suit, cards]) => [suit, [...cards]])
+            ),
+            moves: previous.moves + 1
+          };
+          if (solitaireSelected.source === 'waste') next.waste.pop();
+          else {
+            const sourcePile = next.tableau[solitaireSelected.pileIndex];
+            sourcePile.splice(solitaireSelected.cardIndex);
+            if (sourcePile.length) sourcePile[sourcePile.length - 1].faceUp = true;
+          }
+          next.tableau[targetPileIndex].push(...cards.map(card => ({ ...card, faceUp: true })));
+          return next;
+        });
+        setSolitaireSelected(null);
+      };
+      const moveSolitaireToFoundation = suit => {
+        if (!solitaireSelected) return;
+        const cards = getSolitaireSelectionCards();
+        if (cards.length !== 1) {
+          setSolitaireSelected(null);
+          return;
+        }
+        const card = cards[0];
+        if (card.suit !== suit) return;
+        const foundation = solitaireGame.foundations[suit];
+        const expectedRank = foundation.length + 1;
+        if (card.rank !== expectedRank) {
+          triggerToast('Build each foundation from Ace upward.', 'error');
+          setSolitaireSelected(null);
+          return;
+        }
+        setSolitaireGame(previous => {
+          const next = {
+            ...previous,
+            waste: [...previous.waste],
+            tableau: previous.tableau.map(pile => [...pile]),
+            foundations: Object.fromEntries(
+              Object.entries(previous.foundations).map(([key, pile]) => [key, [...pile]])
+            ),
+            moves: previous.moves + 1
+          };
+          if (solitaireSelected.source === 'waste') next.waste.pop();
+          else {
+            const sourcePile = next.tableau[solitaireSelected.pileIndex];
+            sourcePile.splice(solitaireSelected.cardIndex);
+            if (sourcePile.length) sourcePile[sourcePile.length - 1].faceUp = true;
+          }
+          next.foundations[suit].push({ ...card, faceUp: true });
+          return next;
+        });
+        setSolitaireSelected(null);
+      };
       const [toast, setToast] = useState(null);
       const [dataLoaded, setDataLoaded] = useState(false);
       const [welcomeClock, setWelcomeClock] = useState(() => new Date());
@@ -4861,16 +5047,23 @@
                           Play Tetris <Icon name="chevron-right" className="h-4 w-4" />
                         </span>
                       </button>
-                      <div aria-label="More games coming soon" className="min-h-48 rounded-2xl border border-slate-700/70 bg-slate-950/50 p-5">
+                      <button
+                        type="button"
+                        onClick={() => setSelectedMiniGame('solitaire')}
+                        className="group min-h-48 rounded-2xl border border-violet-500/25 bg-gradient-to-br from-slate-950 via-slate-900 to-violet-950/50 p-5 text-left shadow-lg transition hover:border-violet-400/50 hover:shadow-violet-950/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-400"
+                      >
                         <div className="flex items-center justify-between gap-3">
                           <span className="flex h-12 w-12 items-center justify-center rounded-2xl border border-violet-400/20 bg-violet-500/10 text-violet-300">
                             <Icon name="sparkles" className="h-6 w-6" />
                           </span>
-                          <span className="rounded-full border border-slate-600 bg-slate-800 px-2.5 py-1 text-[9px] font-bold uppercase tracking-wider text-slate-300">Coming soon</span>
+                          <span className="rounded-full border border-emerald-400/25 bg-emerald-400/10 px-2.5 py-1 text-[9px] font-bold uppercase tracking-wider text-emerald-300">Available</span>
                         </div>
-                        <h3 className="mt-4 text-base font-bold text-slate-100">More games</h3>
-                        <p className="mt-1 text-xs leading-relaxed text-slate-400">New mini games will be added in future updates.</p>
-                      </div>
+                        <h3 className="mt-4 text-base font-bold text-slate-100">Solitaire Classic</h3>
+                        <p className="mt-1 text-xs leading-relaxed text-slate-400">Build four foundations by suit and clear the tableau.</p>
+                        <span className="mt-4 inline-flex items-center gap-1 text-xs font-bold text-violet-300 transition group-hover:gap-2">
+                          Play Solitaire <Icon name="chevron-right" className="h-4 w-4" />
+                        </span>
+                      </button>
                     </div>
                   </div>
                 )}
