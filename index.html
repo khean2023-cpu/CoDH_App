@@ -11,7 +11,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="CoDH App">
   <meta name="application-name" content="CoDH App">
-  <meta name="app-version" content="1.16">
+  <meta name="app-version" content="1.17">
   <script>
     (() => {
       document.documentElement.classList.add('app-launching');
@@ -5141,14 +5141,14 @@
                               : 'border border-dashed border-slate-700 bg-slate-950/30'
                           }`}
                         >
-                          {solitaireGame.waste.length && (() => {
+                          {solitaireGame.waste.length ? (() => {
                             const card = solitaireGame.waste[solitaireGame.waste.length - 1];
                             const suit = SOLITAIRE_SUITS.find(item => item.name === card.suit);
                             return <span className="flex h-full flex-col justify-between text-left text-xs font-bold">
                               <span>{solitaireRankLabel(card.rank)}{suit.symbol}</span>
                               <span className="text-center text-xl">{suit.symbol}</span>
                             </span>;
-                          })()}
+                          })() : null}
                         </button>
                         <div />
                         {SOLITAIRE_SUITS.map(suit => {
