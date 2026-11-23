@@ -11,7 +11,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="CoDH App">
   <meta name="application-name" content="CoDH App">
-  <meta name="app-version" content="1.11">
+  <meta name="app-version" content="1.12">
   <script>
     (() => {
       document.documentElement.classList.add('app-launching');
@@ -1701,6 +1701,23 @@
         hourCycle: 'h23'
       }).format(welcomeClock));
       const welcomeGreeting = welcomeHour < 12 ? 'Good morning' : welcomeHour < 18 ? 'Good afternoon' : 'Good evening';
+      const currentMonthBounds = (() => {
+        const now = new Date();
+        const year = now.getFullYear();
+        const month = now.getMonth();
+        const monthValue = `${year}-${String(month + 1).padStart(2, '0')}`;
+        const lastDay = new Date(year, month + 1, 0).getDate();
+        return {
+          monthValue,
+          min: `${monthValue}-01`,
+          max: `${monthValue}-${String(lastDay).padStart(2, '0')}`
+        };
+      })();
+      const isDateInCurrentMonth = dateValue => (
+        typeof dateValue === 'string' &&
+        /^\d{4}-\d{2}-\d{2}$/.test(dateValue) &&
+        dateValue.slice(0, 7) === currentMonthBounds.monthValue
+      );
       const welcomeDisplayName = currentUser?.firstName || splitProfileName(currentUser).firstName || currentUser?.name || 'there';
       const weatherDescriptions = {
         0: 'Clear sky',
@@ -3173,6 +3190,9 @@
         let coveringUser = null;
         if (formType === 'Exchange of Duty') {
           if (!formData.startDate) return triggerToast('Select the date of the duty exchange.', 'error');
+          if (!isDateInCurrentMonth(formData.startDate)) {
+            return triggerToast('Requests are not accepted after the month changes. Select a date in the current month.', 'error');
+          }
           coveringUser = employees.find(user =>
             user.id === formData.coveringUserId &&
             user.id !== currentUser.id &&
@@ -3180,6 +3200,18 @@
             user.status === 'Approved'
           );
           if (!coveringUser) return triggerToast('Select an active employee to cover your duty.', 'error');
+        }
+        if (formType === 'Missed Log') {
+          if (!formData.logDate) return triggerToast('Select the missed log date.', 'error');
+          if (!isDateInCurrentMonth(formData.logDate)) {
+            return triggerToast('Requests are not accepted after the month changes. Select a missed log date in the current month.', 'error');
+          }
+        }
+        if (formType === 'Extra Off Request') {
+          if (!formData.extraOffDate) return triggerToast('Select the extra off date.', 'error');
+          if (!isDateInCurrentMonth(formData.extraOffDate)) {
+            return triggerToast('Requests are not accepted after the month changes. Select an extra off date in the current month.', 'error');
+          }
         }
         if (editingRequest) {
           const currentRequest = requests.find(req =>
@@ -5997,12 +6029,17 @@
 
                   {formType === 'Exchange of Duty' && (
                     <div className="p-4 bg-slate-900/80 rounded-xl border border-slate-800 space-y-3">
+                      <p className="rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-[11px] text-amber-200">
+                        Requests are not accepted after the month changes. This request must use a date in the current month.
+                      </p>
                       <div>
                         <label htmlFor="duty-swap-date" className="text-slate-300 font-semibold block mb-1">Date of Exchange of Duty</label>
                         <input
                           id="duty-swap-date"
                           type="date"
                           required
+                          min={currentMonthBounds.min}
+                          max={currentMonthBounds.max}
                           value={formData.startDate}
                           onChange={e => setFormData(prev => ({ ...prev, startDate: e.target.value }))}
                           className="w-full bg-slate-950 border border-slate-800 rounded-lg px-2.5 py-2 text-white"
@@ -6036,11 +6073,14 @@
 
                   {formType === 'Missed Log' && (
                     <div className="p-4 bg-slate-900/80 rounded-xl border border-slate-800 space-y-3">
+                      <p className="rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-[11px] text-amber-200">
+                        Requests are not accepted after the month changes. This missed log must use a date in the current month.
+                      </p>
                       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                         <div>
                           <label className="text-slate-300 block mb-1">Log Date</label>
                           <input 
-                            type="date" required value={formData.logDate} 
+                            type="date" required min={currentMonthBounds.min} max={currentMonthBounds.max} value={formData.logDate} 
                             onChange={e => setFormData({...formData, logDate: e.target.value})}
                             className="w-full bg-slate-950 border border-slate-800 rounded-lg px-2.5 py-1.5 text-white"
                           />
@@ -6075,10 +6115,13 @@
 
                   {formType === 'Extra Off Request' && (
                     <div className="p-4 bg-slate-900/80 rounded-xl border border-slate-800 space-y-3">
+                      <p className="rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-[11px] text-amber-200">
+                        Requests are not accepted after the month changes. This extra off request must use a date in the current month.
+                      </p>
                       <div>
                         <label className="text-slate-300 block mb-1">Extra Off Date</label>
                         <input
-                          type="date" required value={formData.extraOffDate}
+                          type="date" required min={currentMonthBounds.min} max={currentMonthBounds.max} value={formData.extraOffDate}
                           onChange={e => setFormData({...formData, extraOffDate: e.target.value})}
                           className="w-full bg-slate-950 border border-slate-800 rounded-lg px-2.5 py-1.5 text-white"
                         />
