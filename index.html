@@ -11,7 +11,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="CoDH App">
   <meta name="application-name" content="CoDH App">
-  <meta name="app-version" content="1.14">
+  <meta name="app-version" content="1.15">
   <script>
     (() => {
       document.documentElement.classList.add('app-launching');
@@ -483,6 +483,38 @@
       padding: 1.5rem;
       background: rgb(2 6 23 / 88%);
       text-align: center;
+    }
+
+    .solitaire-card {
+      width: 100%;
+      aspect-ratio: 5 / 7;
+      min-height: 62px;
+      touch-action: manipulation;
+      user-select: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .solitaire-tableau-card {
+      margin-top: -3.25rem;
+    }
+
+    .solitaire-tableau-card:first-child {
+      margin-top: 0;
+    }
+
+    @media (max-width: 640px) {
+      .solitaire-card {
+        min-height: 48px;
+        aspect-ratio: 5 / 7;
+      }
+
+      .solitaire-tableau-card {
+        margin-top: -2.7rem;
+      }
+
+      .solitaire-tableau-card:first-child {
+        margin-top: 0;
+      }
     }
 
     .tetris-game-panel.is-fullscreen .tetris-game-over-overlay {
