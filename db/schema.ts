@@ -165,6 +165,11 @@ export interface PublicChatMessageDocument {
   createdAt: Date;
 }
 
+export interface PublicChatPresenceDocument {
+  userId: string;
+  lastSeenAt: Date;
+}
+
 export interface SessionDocument {
   tokenHash: string;
   userId: string;

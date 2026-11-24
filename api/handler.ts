@@ -15,6 +15,7 @@ import type {
   LeaveCreditKey,
   NotificationDocument,
   ProfileMediaDocument,
+  PublicChatPresenceDocument,
   PublicChatMessageDocument,
   RequestDocument,
   SessionDocument,
@@ -480,6 +481,7 @@ export const handleApi = async (req: Request, apiPath?: string) => {
     const attachments = db.collection<AttachmentDocument>("attachments");
     const profileMedia = db.collection<ProfileMediaDocument>("profileMedia");
     const publicChatMessages = db.collection<PublicChatMessageDocument>("publicChatMessages");
+    const publicChatPresence = db.collection<PublicChatPresenceDocument>("publicChatPresence");
     const spaceInvadersScores = db.collection<SpaceInvadersScoreDocument>("spaceInvadersScores");
     const sessions = db.collection<SessionDocument>("sessions");
 
@@ -733,6 +735,19 @@ export const handleApi = async (req: Request, apiPath?: string) => {
     const body = ["POST", "PUT", "PATCH"].includes(method) ? await req.json().catch(() => ({})) : {};
 
     if (resource === "public-chat") {
+      if (method === "POST" && id === "presence") {
+        const now = new Date();
+        await publicChatPresence.updateOne(
+          { userId: actor.id },
+          { $set: { lastSeenAt: now } },
+          { upsert: true },
+        );
+        const onlineCount = await publicChatPresence.countDocuments({
+          lastSeenAt: { $gt: new Date(now.getTime() - 60_000) },
+        });
+        return json({ onlineCount });
+      }
+
       if (method === "GET" && !id) {
         const messages = await publicChatMessages
           .find()
@@ -763,7 +778,7 @@ export const handleApi = async (req: Request, apiPath?: string) => {
       if (method === "DELETE" && id) {
         const message = await publicChatMessages.findOne({ id });
         if (!message) return error("Public chat message not found.", 404);
-        if (message.senderId !== actor.id && actor.role !== "Admin") {
+        if (message.senderId !== actor.id) {
           return error("You can only unsend your own messages.", 403);
         }
         await publicChatMessages.deleteOne({ id });

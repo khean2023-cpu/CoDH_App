@@ -3,6 +3,7 @@ import type {
   ArchiveDocument,
   AttachmentDocument,
   NotificationDocument,
+  PublicChatPresenceDocument,
   ProfileMediaDocument,
   PublicChatMessageDocument,
   RequestDocument,
@@ -19,6 +20,7 @@ type CollectionName =
   | "attachments"
   | "profileMedia"
   | "publicChatMessages"
+  | "publicChatPresence"
   | "spaceInvadersScores"
   | "sessions";
 
@@ -121,6 +123,13 @@ const definitions: Record<CollectionName, CollectionDefinition> = {
     columns: ["id", "senderId", "senderName", "senderRole", "senderAvatar", "message", "createdAt"],
     jsonColumns: [],
     dateColumns: ["createdAt"],
+  },
+  publicChatPresence: {
+    table: "public_chat_presence",
+    columns: ["userId", "lastSeenAt"],
+    jsonColumns: [],
+    dateColumns: ["lastSeenAt"],
+    upsertColumn: "userId",
   },
   spaceInvadersScores: {
     table: "space_invaders_scores",
@@ -259,6 +268,10 @@ const schemaStatements = [
     message TEXT NOT NULL,
     created_at TIMESTAMPTZ NOT NULL DEFAULT now()
   )`,
+  `CREATE TABLE IF NOT EXISTS public_chat_presence (
+    user_id TEXT PRIMARY KEY,
+    last_seen_at TIMESTAMPTZ NOT NULL DEFAULT now()
+  )`,
   "ALTER TABLE public_chat_messages ADD COLUMN IF NOT EXISTS sender_avatar TEXT",
   "CREATE INDEX IF NOT EXISTS requests_applicant_idx ON requests (applicant_id)",
   "CREATE INDEX IF NOT EXISTS notifications_user_idx ON notifications (user_id)",
@@ -267,6 +280,7 @@ const schemaStatements = [
   "CREATE INDEX IF NOT EXISTS profile_media_user_type_idx ON profile_media (user_id, media_type)",
   "CREATE INDEX IF NOT EXISTS sessions_expiry_idx ON sessions (expires_at)",
   "CREATE INDEX IF NOT EXISTS public_chat_messages_created_idx ON public_chat_messages (created_at DESC, id DESC)",
+  "CREATE INDEX IF NOT EXISTS public_chat_presence_last_seen_idx ON public_chat_presence (last_seen_at DESC)",
 ];
 
 const toSnakeCase = (value: string) => value.replace(/[A-Z]/g, letter => `_${letter.toLowerCase()}`);

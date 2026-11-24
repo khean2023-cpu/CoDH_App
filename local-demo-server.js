@@ -58,6 +58,7 @@ const initialState = () => ({
 });
 
 const state = existsSync(dataFile) ? JSON.parse(readFileSync(dataFile, "utf8")) : initialState();
+const publicChatPresence = new Map();
 state.profileMedia ||= {};
 state.publicChatMessages ||= [];
 state.spaceInvadersScores ||= [];
@@ -337,6 +338,20 @@ const server = createServer(async (req, res) => {
         return json(res, { messages: state.publicChatMessages.slice(-100) });
       }
 
+      if (resource === "public-chat" && req.method === "POST" && id === "presence") {
+        const body = JSON.parse((await readBody(req)).toString("utf8") || "{}");
+        const userId = String(body.userId || "");
+        const sender = state.users.find(user => user.id === userId && user.status === "Approved");
+        if (!sender) return fail(res, "Sign in with an approved account to use public chat.", 401);
+        const now = Date.now();
+        const cutoff = now - 60_000;
+        for (const [presenceUserId, lastSeenAt] of publicChatPresence) {
+          if (lastSeenAt <= cutoff) publicChatPresence.delete(presenceUserId);
+        }
+        publicChatPresence.set(sender.id, now);
+        return json(res, { onlineCount: publicChatPresence.size });
+      }
+
       if (resource === "public-chat" && req.method === "POST" && !id) {
         const body = JSON.parse((await readBody(req)).toString("utf8") || "{}");
         const senderId = String(body.senderId || "");
@@ -373,7 +388,7 @@ const server = createServer(async (req, res) => {
         const messageIndex = state.publicChatMessages.findIndex(message => message.id === id);
         if (messageIndex < 0) return fail(res, "Public chat message not found.", 404);
         const message = state.publicChatMessages[messageIndex];
-        if (message.senderId !== sender.id && sender.role !== "Admin") {
+        if (message.senderId !== sender.id) {
           return fail(res, "You can only unsend your own messages.", 403);
         }
         state.publicChatMessages.splice(messageIndex, 1);
