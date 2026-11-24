@@ -11,7 +11,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="CoDH App">
   <meta name="application-name" content="CoDH App">
-  <meta name="app-version" content="1.17">
+  <meta name="app-version" content="1.18">
   <script>
     (() => {
       document.documentElement.classList.add('app-launching');
@@ -502,6 +502,26 @@
       margin-top: 0;
     }
 
+    .solitaire-game-panel.is-fullscreen {
+      position: fixed;
+      z-index: 100;
+      inset: 0;
+      width: 100%;
+      height: 100vh;
+      height: -webkit-fill-available;
+      height: 100dvh;
+      max-height: none;
+      padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+      overflow-y: auto;
+      overscroll-behavior: contain;
+      border: 0;
+      border-radius: 0;
+    }
+
+    .solitaire-game-panel.is-fullscreen .solitaire-fullscreen-toggle {
+      display: inline-flex;
+    }
+
     @media (max-width: 640px) {
       .solitaire-card {
         min-height: 48px;
@@ -515,6 +535,53 @@
       .solitaire-tableau-card:first-child {
         margin-top: 0;
       }
+    }
+
+    .role-simulation-menu {
+      background: #0c1220;
+    }
+
+    .public-chat-glass {
+      background: rgb(15 23 42 / 72%);
+      border-color: rgb(148 163 184 / 25%);
+      -webkit-backdrop-filter: blur(24px) saturate(150%);
+      backdrop-filter: blur(24px) saturate(150%);
+    }
+
+    .public-chat-glass-header,
+    .public-chat-glass-composer {
+      background: rgb(2 6 23 / 48%);
+    }
+
+    .light-theme .role-simulation-trigger {
+      background: #fff;
+      border-color: #d3ddd5;
+    }
+
+    .light-theme .role-simulation-menu {
+      background: rgb(255 255 255 / 96%);
+      border-color: #d3ddd5;
+    }
+
+    .light-theme .role-simulation-menu button:hover,
+    .light-theme .role-simulation-menu button:focus-visible {
+      background: #edf2ee;
+    }
+
+    .light-theme .public-chat-glass {
+      background: rgb(248 251 249 / 82%);
+      border-color: rgb(100 116 139 / 28%);
+    }
+
+    .light-theme .public-chat-glass-header,
+    .light-theme .public-chat-glass-composer {
+      background: rgb(237 242 238 / 76%);
+    }
+
+    .light-theme .public-chat-glass [class*="bg-slate-950"],
+    .light-theme .public-chat-glass [class*="bg-slate-900"],
+    .light-theme .public-chat-glass [class*="bg-slate-800"] {
+      background-color: rgb(226 234 228 / 68%) !important;
     }
 
     .tetris-game-panel.is-fullscreen .tetris-game-over-overlay {
@@ -1659,6 +1726,7 @@
       const [isPublicChatOpen, setIsPublicChatOpen] = useState(false);
       const [publicChatUnreadCount, setPublicChatUnreadCount] = useState(0);
       const [publicChatMessages, setPublicChatMessages] = useState([]);
+      const [publicChatOnlineCount, setPublicChatOnlineCount] = useState(null);
       const [publicChatDraft, setPublicChatDraft] = useState('');
       const [publicChatError, setPublicChatError] = useState('');
       const [publicChatLoading, setPublicChatLoading] = useState(false);
@@ -1742,6 +1810,7 @@
       });
       const [solitaireGame, setSolitaireGame] = useState(createSolitaireGame);
       const [solitaireSelected, setSolitaireSelected] = useState(null);
+      const [solitaireFullscreen, setSolitaireFullscreen] = useState(false);
       const resetSolitaire = () => {
         setSolitaireGame(createSolitaireGame());
         setSolitaireSelected(null);
@@ -2121,6 +2190,40 @@
         setPublicChatUnreadCount(0);
         localStorage.setItem(publicChatUnreadStorageKey(currentUser.id), '0');
       }, [isAuthenticated, currentUser?.id, isPublicChatOpen]);
+
+      useEffect(() => {
+        if (!isAuthenticated || !currentUser) {
+          setPublicChatOnlineCount(null);
+          return undefined;
+        }
+        let isCancelled = false;
+        const updatePresence = async () => {
+          if (document.visibilityState !== 'visible') return;
+          try {
+            const result = await api('public-chat/presence', {
+              method: 'POST',
+              body: { userId: currentUser.id }
+            });
+            if (!isCancelled && Number.isInteger(result.onlineCount) && result.onlineCount >= 0) {
+              setPublicChatOnlineCount(result.onlineCount);
+            }
+          } catch (error) {
+            console.error('Could not update public chat presence:', error);
+            if (!isCancelled) setPublicChatOnlineCount(null);
+          }
+        };
+        const handleVisibilityChange = () => {
+          if (document.visibilityState === 'visible') updatePresence();
+        };
+        updatePresence();
+        const timer = window.setInterval(updatePresence, 20000);
+        document.addEventListener('visibilitychange', handleVisibilityChange);
+        return () => {
+          isCancelled = true;
+          window.clearInterval(timer);
+          document.removeEventListener('visibilitychange', handleVisibilityChange);
+        };
+      }, [isAuthenticated, currentUser?.id]);
 
       useEffect(() => {
         if (!isPublicChatOpen || !publicChatScrollRef.current) return;
@@ -2590,6 +2693,7 @@
         setTetrisRunning(false);
         setTetrisPaused(false);
         setTetrisFullscreen(false);
+        setSolitaireFullscreen(false);
       }, [activeTab]);
 
       const playTetrisSound = (frequency, duration = 0.08, type = 'square', delay = 0) => {
@@ -4339,6 +4443,7 @@
                   aria-modal="false"
                   aria-label="Public chat"
                   className="fixed z-[35] flex flex-col overflow-hidden rounded-2xl border border-slate-700 bg-slate-900 shadow-2xl shadow-black/50"
+                  className="public-chat-glass fixed z-[35] flex flex-col overflow-hidden rounded-2xl border border-slate-700 shadow-2xl shadow-black/50"
                   style={{
                     right: Math.min(publicChatPosition.right, Math.max(12, window.innerWidth - 344)),
                     bottom: Math.min(publicChatPosition.bottom + 68, Math.max(12, window.innerHeight - 460)),
@@ -4346,13 +4451,15 @@
                     height: 'min(28rem, calc(100dvh - 1.5rem))'
                   }}
                 >
-                  <header className="flex shrink-0 items-center justify-between gap-3 border-b border-slate-700 bg-slate-950/80 px-4 py-3">
+                  <header className="public-chat-glass-header flex shrink-0 items-center justify-between gap-3 border-b border-slate-700 px-4 py-3">
                     <div className="flex min-w-0 items-center gap-2">
                       <span className={`h-2.5 w-2.5 shrink-0 rounded-full ${hasLiveConnection ? 'bg-emerald-400' : 'bg-amber-400'}`} />
                       <div className="min-w-0">
                         <h2 className="text-sm font-bold text-white">Public chat</h2>
                         <p className="truncate text-[10px] text-slate-400">
-                          {hasLiveConnection ? 'Shared with everyone signed in' : 'Connection unavailable'}
+                          {hasLiveConnection
+                            ? `${publicChatOnlineCount === null ? '—' : publicChatOnlineCount} online`
+                            : 'Connection unavailable'}
                         </p>
                       </div>
                     </div>
@@ -4370,7 +4477,7 @@
                     ref={publicChatScrollRef}
                     aria-label="Public chat messages"
                     aria-live="polite"
-                    className="min-h-0 flex-1 space-y-3 overflow-y-auto bg-slate-950/40 p-3"
+                    className="min-h-0 flex-1 space-y-3 overflow-y-auto bg-slate-950/25 p-3"
                   >
                     {publicChatError && (
                       <p role="status" className="rounded-lg border border-amber-500/30 bg-amber-500/10 px-2.5 py-2 text-[10px] text-amber-200">
@@ -4401,7 +4508,7 @@
                               className={`max-w-[82%] select-none rounded-2xl px-3 py-2 ${
                                 isOwnMessage
                                   ? 'rounded-br-md bg-indigo-600/90 text-white'
-                                  : 'rounded-bl-md border border-slate-700 bg-slate-800 text-slate-100'
+                                  : 'rounded-bl-md border border-slate-700/70 bg-slate-800/75 text-slate-100'
                               }`}
                               onPointerDown={event => handlePublicChatMessagePointerDown(message.id, event)}
                               onPointerUp={clearPublicChatPressTimer}
@@ -4453,7 +4560,7 @@
                     )}
                   </div>
 
-                  <form onSubmit={handlePublicChatSubmit} className="flex shrink-0 items-end gap-2 border-t border-slate-700 bg-slate-950/80 p-3">
+                  <form onSubmit={handlePublicChatSubmit} className="public-chat-glass-composer flex shrink-0 items-end gap-2 border-t border-slate-700 p-3">
                     <div className="min-w-0 flex-1">
                       <label htmlFor="public-chat-message" className="sr-only">Message to public chat</label>
                       <textarea
@@ -4463,7 +4570,7 @@
                         maxLength={500}
                         rows={2}
                         placeholder="Write a public message…"
-                        className="max-h-24 min-h-10 w-full resize-none rounded-xl border border-slate-700 bg-slate-900 px-3 py-2 text-xs text-white placeholder:text-slate-500 focus:border-indigo-400 focus:outline-none"
+                        className="max-h-24 min-h-10 w-full resize-none rounded-xl border border-white/15 bg-white/10 px-3 py-2 text-xs text-white placeholder:text-slate-300/70 backdrop-blur-md focus:border-indigo-300 focus:bg-white/15 focus:outline-none"
                       />
                     </div>
                     <button
@@ -4634,7 +4741,7 @@
                   aria-expanded={isRoleSimulationOpen}
                   aria-controls="admin-role-options"
                   onClick={() => setIsRoleSimulationOpen(open => !open)}
-                    className="w-full rounded-2xl border border-slate-200 bg-white px-3.5 py-2.5 text-left shadow-sm dark:border-slate-800 dark:bg-[#0C1220] focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    className="role-simulation-trigger w-full rounded-2xl border border-slate-200 bg-white px-3.5 py-2.5 text-left shadow-sm dark:border-slate-800 dark:bg-[#0C1220] focus:outline-none focus:ring-2 focus:ring-indigo-500"
                 >
                     <span className="flex w-full items-center justify-between gap-3">
                       <span className="flex min-w-0 items-center gap-2">
@@ -4650,7 +4757,7 @@
                 {isRoleSimulationOpen && (
                     <div
                       id="admin-role-options"
-                      className="absolute inset-x-0 z-30 mt-1.5 overflow-hidden rounded-2xl border border-slate-800 bg-[#0C1220] p-1.5 shadow-xl"
+                      className="role-simulation-menu absolute inset-x-0 z-30 mt-1.5 overflow-hidden rounded-2xl border border-slate-800 p-1.5 shadow-xl"
                     >
                       {roleSimulationRoles.map((role) => (
                       <button
@@ -5096,21 +5203,39 @@
                           Play Solitaire <Icon name="chevron-right" className="h-4 w-4" />
                         </span>
                       </button>
+                      <div aria-label="More games coming soon" className="min-h-48 rounded-2xl border border-slate-700/70 bg-slate-950/50 p-5">
+                        <div className="flex items-center justify-between gap-3">
+                          <span className="flex h-12 w-12 items-center justify-center rounded-2xl border border-slate-600/70 bg-slate-800/70 text-slate-300">
+                            <Icon name="sparkles" className="h-6 w-6" />
+                          </span>
+                          <span className="rounded-full border border-slate-600 bg-slate-800 px-2.5 py-1 text-[9px] font-bold uppercase tracking-wider text-slate-300">Coming soon</span>
+                        </div>
+                        <h3 className="mt-4 text-base font-bold text-slate-100">More games</h3>
+                        <p className="mt-1 text-xs leading-relaxed text-slate-400">New mini games are on the way.</p>
+                      </div>
                     </div>
                   </div>
                 )}
                 {activeTab === 'mini-games' && selectedMiniGame === 'solitaire' && (
-                  <section className="overflow-hidden rounded-2xl border border-violet-500/20 bg-gradient-to-br from-slate-950 via-slate-900 to-violet-950/40 shadow-xl">
+                  <section className={`solitaire-game-panel overflow-hidden rounded-2xl border border-violet-500/20 bg-gradient-to-br from-slate-950 via-slate-900 to-violet-950/40 shadow-xl ${solitaireFullscreen ? 'is-fullscreen' : ''}`}>
                     <div className="flex items-center justify-between gap-3 border-b border-slate-800 px-4 py-4 sm:px-5">
                       <div>
                         <h3 className="text-sm font-bold text-white">Solitaire Classic</h3>
                         <p className="mt-1 text-[11px] text-slate-400">{solitaireGame.moves} moves</p>
                       </div>
                       <div className="flex gap-2">
+                        <button
+                          type="button"
+                          onClick={() => setSolitaireFullscreen(value => !value)}
+                          aria-label={solitaireFullscreen ? 'Exit fullscreen' : 'Enter fullscreen'}
+                          className="solitaire-fullscreen-toggle inline-flex h-9 items-center rounded-lg border border-violet-400/30 bg-violet-500/10 px-3 text-[10px] font-bold text-violet-200"
+                        >
+                          {solitaireFullscreen ? 'Exit fullscreen' : 'Fullscreen'}
+                        </button>
                         <button type="button" onClick={resetSolitaire} className="h-9 rounded-lg border border-violet-400/30 bg-violet-500/10 px-3 text-[10px] font-bold text-violet-200">
                           New game
                         </button>
-                        <button type="button" onClick={() => { setSelectedMiniGame(null); setSolitaireSelected(null); }} className="h-9 rounded-lg border border-slate-700 bg-slate-900 px-3 text-[10px] font-bold text-slate-200">
+                        <button type="button" onClick={() => { setSelectedMiniGame(null); setSolitaireSelected(null); setSolitaireFullscreen(false); }} className="h-9 rounded-lg border border-slate-700 bg-slate-900 px-3 text-[10px] font-bold text-slate-200">
                           All games
                         </button>
                       </div>
