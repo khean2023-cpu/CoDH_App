@@ -11,7 +11,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="CoDH App">
   <meta name="application-name" content="CoDH App">
-  <meta name="app-version" content="1.20">
+  <meta name="app-version" content="1.21">
   <script>
     (() => {
       document.documentElement.classList.add('app-launching');
@@ -4457,7 +4457,7 @@
                         <h2 className="text-sm font-bold text-white">Public chat</h2>
                         <p className="truncate text-[10px] text-slate-400">
                           {hasLiveConnection
-                            ? `${publicChatOnlineCount === null ? '—' : publicChatOnlineCount} online`
+                            ? (publicChatOnlineCount === null ? 'Online count unavailable' : `${publicChatOnlineCount} online`)
                             : 'Connection unavailable'}
                         </p>
                       </div>
@@ -5303,15 +5303,6 @@
                         {solitaireGame.tableau.map((pile, pileIndex) => (
                           <div
                             key={pileIndex}
-                            role="button"
-                            tabIndex={0}
-                            onClick={() => {
-                              if (solitaireSelected) {
-                                moveSolitaireToTableau(pileIndex);
-                              } else if (!pile.length) {
-                                triggerToast('Select a card first.', 'info');
-                              }
-                            }}
                             className="min-h-28 rounded-lg"
                           >
                             {!pile.length && (
