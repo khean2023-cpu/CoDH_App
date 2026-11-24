@@ -11,7 +11,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="CoDH App">
   <meta name="application-name" content="CoDH App">
-  <meta name="app-version" content="1.19">
+  <meta name="app-version" content="1.20">
   <script>
     (() => {
       document.documentElement.classList.add('app-launching');
@@ -554,8 +554,8 @@
     }
 
     .light-theme .role-simulation-trigger {
-      background: #fff;
-      border-color: #d3ddd5;
+      background: #fff !important;
+      border-color: #d3ddd5 !important;
     }
 
     .light-theme .role-simulation-menu {
@@ -4036,7 +4036,8 @@
         setPublicChatError('');
         try {
           await api(`public-chat/${encodeURIComponent(message.id)}`, {
-            method: 'DELETE'
+            method: 'DELETE',
+            body: { userId: currentUser.id }
           });
           setPublicChatMessages(previous => previous.filter(item => item.id !== message.id));
           setPublicChatTimestampMessageId(current => current === message.id ? null : current);
