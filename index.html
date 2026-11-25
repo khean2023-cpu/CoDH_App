@@ -59,6 +59,26 @@
       overflow: hidden;
     }
 
+    @supports (-webkit-touch-callout: none) {
+      html {
+        height: -webkit-fill-available;
+      }
+
+      body {
+        min-height: -webkit-fill-available;
+      }
+
+      .app-shell {
+        height: -webkit-fill-available;
+      }
+
+      @supports (height: 100dvh) {
+        .app-shell {
+          height: 100dvh;
+        }
+      }
+    }
+
     .app-shell > main {
       min-height: 0;
       overflow-y: auto;
