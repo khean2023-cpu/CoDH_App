@@ -11,7 +11,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="CoDH App">
   <meta name="application-name" content="CoDH App">
-  <meta name="app-version" content="1.27">
+  <meta name="app-version" content="1.28">
   <script>
     (() => {
       document.documentElement.classList.add('app-launching');
@@ -3235,7 +3235,7 @@
         if (!targetReq) return;
         if (isRequestLapsed(targetReq)) {
           return triggerToast(
-            `Request ${targetReq.id} cannot be approved because its ${getRequestActionDate(targetReq)} date has moved outside the current month. It remains in the records for reporting.`,
+            `Request ${targetReq.id} cannot be approved because it was filed outside the current month. It remains in the records for reporting.`,
             'error'
           );
         }
@@ -7678,6 +7678,9 @@
     function StatusBadge({ status }) {
       if (status === 'Approved') {
         return <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-950 text-emerald-400 border border-emerald-800">Approved</span>;
+      }
+      if (status === 'Lapsed') {
+        return <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-rose-950 text-rose-400 border border-rose-800">Lapsed</span>;
       }
       if (status === 'Rejected') {
         return <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-rose-950 text-rose-400 border border-rose-800">Declined / Terminated</span>;
