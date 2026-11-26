@@ -716,7 +716,7 @@ const server = createServer(async (req, res) => {
         const isApprovalAction = body.status || body.approvedAt ||
           Array.isArray(body.logs) && body.logs.some(log =>
             typeof log.action === "string" && /(APPROVE|REJECT) by /.test(log.action));
-        if (isApprovalAction && filedMonth) {
+        if (isApprovalAction && (existing.lapsed || filedMonth)) {
           const nowParts = new Intl.DateTimeFormat("en-PH", {
             timeZone: "Asia/Manila",
             year: "numeric",
@@ -724,7 +724,7 @@ const server = createServer(async (req, res) => {
           }).formatToParts(new Date());
           const year = nowParts.find(part => part.type === "year")?.value;
           const month = nowParts.find(part => part.type === "month")?.value;
-          if (year && month && filedMonth !== `${year}-${month}`) {
+          if (existing.lapsed || (year && month && filedMonth && filedMonth !== `${year}-${month}`)) {
             existing.lapsed = true;
             existing.status = "Lapsed";
             existing.lapsedAt = new Date().toISOString();
