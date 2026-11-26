@@ -11,7 +11,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="CoDH App">
   <meta name="application-name" content="CoDH App">
-  <meta name="app-version" content="1.30">
+  <meta name="app-version" content="1.31">
   <script>
     (() => {
       document.documentElement.classList.add('app-launching');
@@ -20,7 +20,26 @@
         window.matchMedia('(display-mode: fullscreen)').matches ||
         window.navigator.standalone === true ||
         new URLSearchParams(window.location.search).get('codh-native') === '1';
-      if (isInstalledApp) document.documentElement.classList.add('installed-app');
+      const isIos =
+        /iPhone|iPad|iPod/i.test(window.navigator.userAgent) ||
+        (window.navigator.platform === 'MacIntel' && window.navigator.maxTouchPoints > 1);
+      if (isInstalledApp) {
+        document.documentElement.classList.add('installed-app');
+        if (isIos) document.documentElement.classList.add('ios-installed-app');
+      }
+
+      const updateAppViewportHeight = () => {
+        const height = window.visualViewport?.height || window.innerHeight;
+        document.documentElement.style.setProperty('--app-viewport-height', `${Math.round(height)}px`);
+      };
+      updateAppViewportHeight();
+      window.addEventListener('resize', updateAppViewportHeight, { passive: true });
+      window.addEventListener('orientationchange', () => {
+        window.requestAnimationFrame(updateAppViewportHeight);
+        window.setTimeout(updateAppViewportHeight, 250);
+      }, { passive: true });
+      window.addEventListener('pageshow', updateAppViewportHeight, { passive: true });
+      window.visualViewport?.addEventListener('resize', updateAppViewportHeight, { passive: true });
     })();
   </script>
   <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
@@ -642,7 +661,7 @@
     }
 
     .tetris-game-panel.is-fullscreen .tetris-game-board {
-      width: min(420px, calc((100dvh - 220px) / 2), calc(100vw - 24px));
+      width: min(420px, calc((var(--app-viewport-height, 100dvh) - 220px) / 2), calc(100vw - 24px));
       max-width: none;
     }
 
@@ -725,7 +744,7 @@
       }
 
       .tetris-game-panel.is-fullscreen .tetris-game-board {
-        width: min(100%, calc((100dvh - 220px) / 2), calc(100vw - 24px));
+        width: min(100%, calc((var(--app-viewport-height, 100dvh) - 220px) / 2), calc(100vw - 24px));
         max-width: none;
       }
 
@@ -774,7 +793,7 @@
       }
 
       .tetris-game-panel.is-fullscreen .tetris-game-board {
-        width: min(100%, calc((100dvh - 190px) / 2), calc(100vw - 16px));
+        width: min(100%, calc((var(--app-viewport-height, 100dvh) - 190px) / 2), calc(100vw - 16px));
       }
 
       .tetris-game-panel.is-fullscreen .tetris-game-controls {
@@ -861,6 +880,32 @@
         margin: 0;
         justify-content: center;
       }
+    }
+
+    html.ios-installed-app .app-shell {
+      height: var(--app-viewport-height, 100dvh);
+      min-height: 0;
+    }
+
+    html.ios-installed-app .tetris-game-panel.is-fullscreen {
+      box-sizing: border-box;
+      inset: 0;
+      height: var(--app-viewport-height, 100dvh);
+      min-height: 0;
+      max-height: none;
+      padding:
+        env(safe-area-inset-top)
+        env(safe-area-inset-right)
+        env(safe-area-inset-bottom)
+        env(safe-area-inset-left);
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      overscroll-behavior: contain;
+      touch-action: pan-y;
+    }
+
+    html.ios-installed-app .tetris-game-panel.is-fullscreen .tetris-game-board {
+      width: min(100%, calc((var(--app-viewport-height, 100dvh) - 220px) / 2), calc(100vw - 24px));
     }
 
     .light-theme[class~="bg-slate-900"] {
