@@ -1202,8 +1202,10 @@ export const handleApi = async (req: Request, apiPath?: string) => {
             return error("This request can no longer be edited.", 403);
           }
           updates = pickApplicantRequest(body);
-          updates.type = request.type;
-          if (request.type === "Exchange of Duty" && request.status === "Pending Duty Swap Approval") {
+          if (!REQUEST_TYPES.has(String(updates.type))) {
+            return error("Select a valid request type.");
+          }
+          if (updates.type === "Exchange of Duty") {
             const taggedUsers = Array.isArray(updates.taggedUsers)
               ? [...new Set(updates.taggedUsers.filter((userId): userId is string => typeof userId === "string"))]
               : request.taggedUsers || [];
@@ -1216,6 +1218,16 @@ export const handleApi = async (req: Request, apiPath?: string) => {
               return error("Select one available covering employee.");
             }
             updates.taggedUsers = taggedUsers;
+            updates.status = "Pending Duty Swap Approval";
+            updates.deptHeadApproval = "Pending";
+            updates.hrApproval = "Pending";
+            updates.finalApproval = "Pending";
+          } else if (request.status === "Pending Duty Swap Approval") {
+            updates.taggedUsers = [];
+            updates.status = "Pending Dept Head Approval";
+            updates.deptHeadApproval = "Pending";
+            updates.hrApproval = "Pending";
+            updates.finalApproval = "Pending";
           } else {
             updates.taggedUsers = request.taggedUsers || [];
           }
