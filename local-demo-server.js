@@ -707,6 +707,32 @@ const server = createServer(async (req, res) => {
         const body = JSON.parse((await readBody(req)).toString("utf8") || "{}");
         const index = state.requests.findIndex(request => request.id === id);
         if (index < 0) return fail(res, "Request not found.", 404);
+        const existing = state.requests[index];
+        const actionDate =
+          existing.type === "Exchange of Duty" ? existing.startDate :
+            existing.type === "Missed Log" ? existing.logDate :
+              existing.type === "Extra Off Request" ? existing.extraOffDate :
+                existing.type === "Leave" ? existing.startDate :
+                  null;
+        const isApprovalAction = body.status || body.approvedAt ||
+          Array.isArray(body.logs) && body.logs.some(log =>
+            typeof log.action === "string" && /(APPROVE|REJECT) by /.test(log.action));
+        if (isApprovalAction && actionDate && /^\d{4}-\d{2}-\d{2}$/.test(actionDate)) {
+          const nowParts = new Intl.DateTimeFormat("en-PH", {
+            timeZone: "Asia/Manila",
+            year: "numeric",
+            month: "2-digit",
+          }).formatToParts(new Date());
+          const year = nowParts.find(part => part.type === "year")?.value;
+          const month = nowParts.find(part => part.type === "month")?.value;
+          if (year && month && actionDate.slice(0, 7) !== `${year}-${month}`) {
+            existing.lapsed = true;
+            existing.lapsedAt = new Date().toISOString();
+            existing.lapseReason = "Request date moved outside the current month.";
+            saveState();
+            return fail(res, "This request cannot be approved because its request date is outside the current month. It remains in the records for reporting.", 409);
+          }
+        }
         state.requests[index] = { ...state.requests[index], ...body, id };
         saveState();
         return json(res, state.requests[index]);
