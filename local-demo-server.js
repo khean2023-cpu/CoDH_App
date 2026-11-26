@@ -101,7 +101,40 @@ if (!state.users.some(user => user.role === "Human Resource")) {
 const departmentHeadApplicantIds = new Set(
   state.users.filter(user => user.role === "Department Head").map(user => user.id),
 );
+const startupNowParts = new Intl.DateTimeFormat("en-PH", {
+  timeZone: "Asia/Manila",
+  year: "numeric",
+  month: "2-digit",
+}).formatToParts(new Date());
+const startupYear = startupNowParts.find(part => part.type === "year")?.value;
+const startupMonth = startupNowParts.find(part => part.type === "month")?.value;
+const startupMonthKey = startupYear && startupMonth ? `${startupYear}-${startupMonth}` : null;
 for (const request of state.requests) {
+  let filingMonth = null;
+  const filed = String(request.dateFiled || "");
+  if (/^\d{4}-\d{2}-\d{2}/.test(filed)) filingMonth = filed.slice(0, 7);
+  const localeMatch = filed.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})(?:,|$)/);
+  if (localeMatch) filingMonth = `${localeMatch[3]}-${localeMatch[1].padStart(2, "0")}`;
+  if (!filingMonth) {
+    const actionDate =
+      request.type === "Exchange of Duty" ? request.startDate :
+        request.type === "Missed Log" ? request.logDate :
+          request.type === "Extra Off Request" ? request.extraOffDate :
+            request.type === "Leave" ? request.startDate :
+              null;
+    if (/^\d{4}-\d{2}-\d{2}$/.test(String(actionDate || ""))) filingMonth = actionDate.slice(0, 7);
+  }
+  if (
+    startupMonthKey &&
+    !["Approved", "Rejected", "Lapsed"].includes(request.status) &&
+    (request.lapsed || (filingMonth && filingMonth !== startupMonthKey))
+  ) {
+    request.status = "Lapsed";
+    request.lapsed = true;
+    request.lapsedAt ||= new Date().toISOString();
+    request.lapseReason = "Request moved outside the filing month and can no longer be approved.";
+    migratedState = true;
+  }
   if (
     departmentHeadApplicantIds.has(request.applicantId) &&
     request.status === "Pending Administrative Officer V Approval" &&
