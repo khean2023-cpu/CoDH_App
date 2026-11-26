@@ -20,6 +20,24 @@ export const isHumanResourceReviewer = (user: UserDocument, users: UserDocument[
 const isDepartmentHeadApplicant = (request: RequestDocument, users: UserDocument[]) =>
   users.some(candidate => candidate.id === request.applicantId && candidate.role === "Department Head");
 
+export const isRequestLapsed = (request: RequestDocument) => {
+  const actionDate =
+    request.type === "Exchange of Duty" ? request.startDate :
+      request.type === "Missed Log" ? request.logDate :
+        request.type === "Extra Off Request" ? request.extraOffDate :
+          request.type === "Leave" ? request.startDate :
+            null;
+  if (!actionDate || !/^\d{4}-\d{2}-\d{2}$/.test(actionDate)) return false;
+  const nowParts = new Intl.DateTimeFormat("en-PH", {
+    timeZone: "Asia/Manila",
+    year: "numeric",
+    month: "2-digit",
+  }).formatToParts(new Date());
+  const year = nowParts.find(part => part.type === "year")?.value;
+  const month = nowParts.find(part => part.type === "month")?.value;
+  return Boolean(year && month && actionDate.slice(0, 7) !== `${year}-${month}`);
+};
+
 export const canAccessRequest = (
   user: UserDocument,
   request: RequestDocument,
@@ -115,18 +133,22 @@ export const createApprovalUpdate = (
   nextStatus: string,
   date: string,
 ) => {
+  if (isRequestLapsed(request)) return null;
   const role = getApprovalRole(user, request, users);
   if (!role) return null;
 
   const isReject = nextStatus === "Rejected";
+  const approvedAt = new Date().toISOString();
   const update: Partial<RequestDocument> = {
     status: nextStatus,
     approvedBy: user.name,
     approvalDate: date,
+    approvedAt,
     logs: [
       ...(request.logs || []),
       {
         date,
+        approvedAt,
         action: `${isReject ? "REJECT" : "APPROVE"} by ${user.name} (${role})`,
         user: user.name,
         userId: user.id,

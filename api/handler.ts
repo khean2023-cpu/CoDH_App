@@ -7,6 +7,7 @@ import {
   canManageLeaveCredits,
   createApprovalUpdate,
   isHumanResourceReviewer,
+  isRequestLapsed,
 } from "./authorization.js";
 import { LEAVE_CREDIT_KEYS } from "../db/schema.js";
 import type {
@@ -259,7 +260,7 @@ const nextRequestId = async () => {
 const REQUEST_FIELDS = [
   "type", "subType", "section", "applicantId", "applicantName", "dateFiled", "logDate", "timeIn", "timeOut",
   "startDate", "endDate", "totalDays", "leaveDetails", "extraOffDate", "reason", "attachmentName", "attachmentId", "status", "deptHeadApproval",
-  "finalApproval", "hrApproval", "approvedBy", "approvalDate", "taggedUsers", "logs",
+  "finalApproval", "hrApproval", "approvedBy", "approvalDate", "approvedAt", "taggedUsers", "logs",
 ] as const;
 
 const pickRequest = (body: Record<string, unknown>) => {
@@ -1237,6 +1238,13 @@ export const handleApi = async (req: Request, apiPath?: string) => {
           }
         } else {
           const allUsers = await users.find({ status: "Approved" }).toArray();
+          if (isRequestLapsed(request)) {
+            await requests.updateOne(
+              { id },
+              { $set: { lapsed: true, lapsedAt: new Date().toISOString(), lapseReason: "Request date moved outside the current month." } },
+            );
+            return error("This request cannot be approved because its request date is outside the current month. It remains in the records for reporting.", 409);
+          }
           const approvalUpdate = createApprovalUpdate(
             request,
             actor,
