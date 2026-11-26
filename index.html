@@ -11,7 +11,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="CoDH App">
   <meta name="application-name" content="CoDH App">
-  <meta name="app-version" content="1.26">
+  <meta name="app-version" content="1.27">
   <script>
     (() => {
       document.documentElement.classList.add('app-launching');
@@ -2036,10 +2036,18 @@
         if (request?.type === 'Leave') return request.startDate;
         return null;
       };
+      const getRequestMonthKey = request => {
+        if (/^\d{4}-\d{2}-\d{2}/.test(String(request?.dateFiled || ''))) {
+          return String(request.dateFiled).slice(0, 7);
+        }
+        const match = String(request?.dateFiled || '').match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})(?:,|$)/);
+        return match ? `${match[3]}-${match[1].padStart(2, '0')}` : null;
+      };
       const isRequestLapsed = request =>
-        getRequestActionDate(request)
-          ? !isDateInCurrentMonth(getRequestActionDate(request))
-          : false;
+        Boolean(request?.lapsed) ||
+        (request?.status !== 'Approved' && request?.status !== 'Rejected' &&
+          getRequestMonthKey(request) !== null &&
+          getRequestMonthKey(request) !== currentMonthBounds.monthValue);
       const welcomeDisplayName = currentUser?.firstName || splitProfileName(currentUser).firstName || currentUser?.name || 'there';
       const weatherDescriptions = {
         0: 'Clear sky',
@@ -3812,6 +3820,7 @@
       }, [employees, currentUser]);
 
       const awaitingCurrentApproval = (req) => {
+        if (isRequestLapsed(req)) return false;
         if (
           currentUser?.role === 'Employee' &&
           req.type === 'Exchange of Duty' &&

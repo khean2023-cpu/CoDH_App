@@ -708,16 +708,15 @@ const server = createServer(async (req, res) => {
         const index = state.requests.findIndex(request => request.id === id);
         if (index < 0) return fail(res, "Request not found.", 404);
         const existing = state.requests[index];
-        const actionDate =
-          existing.type === "Exchange of Duty" ? existing.startDate :
-            existing.type === "Missed Log" ? existing.logDate :
-              existing.type === "Extra Off Request" ? existing.extraOffDate :
-                existing.type === "Leave" ? existing.startDate :
-                  null;
+        let filedMonth = null;
+        const filed = String(existing.dateFiled || "");
+        if (/^\d{4}-\d{2}-\d{2}/.test(filed)) filedMonth = filed.slice(0, 7);
+        const localeMatch = filed.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})(?:,|$)/);
+        if (localeMatch) filedMonth = `${localeMatch[3]}-${localeMatch[1].padStart(2, "0")}`;
         const isApprovalAction = body.status || body.approvedAt ||
           Array.isArray(body.logs) && body.logs.some(log =>
             typeof log.action === "string" && /(APPROVE|REJECT) by /.test(log.action));
-        if (isApprovalAction && actionDate && /^\d{4}-\d{2}-\d{2}$/.test(actionDate)) {
+        if (isApprovalAction && filedMonth) {
           const nowParts = new Intl.DateTimeFormat("en-PH", {
             timeZone: "Asia/Manila",
             year: "numeric",
@@ -725,8 +724,9 @@ const server = createServer(async (req, res) => {
           }).formatToParts(new Date());
           const year = nowParts.find(part => part.type === "year")?.value;
           const month = nowParts.find(part => part.type === "month")?.value;
-          if (year && month && actionDate.slice(0, 7) !== `${year}-${month}`) {
+          if (year && month && filedMonth !== `${year}-${month}`) {
             existing.lapsed = true;
+            existing.status = "Lapsed";
             existing.lapsedAt = new Date().toISOString();
             existing.lapseReason = "Request date moved outside the current month.";
             saveState();

@@ -1241,7 +1241,7 @@ export const handleApi = async (req: Request, apiPath?: string) => {
           if (isRequestLapsed(request)) {
             await requests.updateOne(
               { id },
-              { $set: { lapsed: true, lapsedAt: new Date().toISOString(), lapseReason: "Request date moved outside the current month." } },
+              { $set: { status: "Lapsed", lapsed: true, lapsedAt: new Date().toISOString(), lapseReason: "Request moved outside the filing month and can no longer be approved." } },
             );
             return error("This request cannot be approved because its request date is outside the current month. It remains in the records for reporting.", 409);
           }

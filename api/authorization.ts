@@ -21,13 +21,14 @@ const isDepartmentHeadApplicant = (request: RequestDocument, users: UserDocument
   users.some(candidate => candidate.id === request.applicantId && candidate.role === "Department Head");
 
 export const isRequestLapsed = (request: RequestDocument) => {
-  const actionDate =
-    request.type === "Exchange of Duty" ? request.startDate :
-      request.type === "Missed Log" ? request.logDate :
-        request.type === "Extra Off Request" ? request.extraOffDate :
-          request.type === "Leave" ? request.startDate :
-            null;
-  if (!actionDate || !/^\d{4}-\d{2}-\d{2}$/.test(actionDate)) return false;
+  if (request.lapsed) return true;
+  if (["Approved", "Rejected", "Lapsed"].includes(request.status)) return request.status === "Lapsed";
+  let filedMonth: string | null = null;
+  const filed = String(request.dateFiled || "");
+  if (/^\d{4}-\d{2}-\d{2}/.test(filed)) filedMonth = filed.slice(0, 7);
+  const localeMatch = filed.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})(?:,|$)/);
+  if (localeMatch) filedMonth = `${localeMatch[3]}-${localeMatch[1].padStart(2, "0")}`;
+  if (!filedMonth) return false;
   const nowParts = new Intl.DateTimeFormat("en-PH", {
     timeZone: "Asia/Manila",
     year: "numeric",
@@ -35,7 +36,7 @@ export const isRequestLapsed = (request: RequestDocument) => {
   }).formatToParts(new Date());
   const year = nowParts.find(part => part.type === "year")?.value;
   const month = nowParts.find(part => part.type === "month")?.value;
-  return Boolean(year && month && actionDate.slice(0, 7) !== `${year}-${month}`);
+  return Boolean(year && month && filedMonth !== `${year}-${month}`);
 };
 
 export const canAccessRequest = (
