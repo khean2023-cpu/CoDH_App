@@ -11,7 +11,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="CoDH App">
   <meta name="application-name" content="CoDH App">
-  <meta name="app-version" content="1.31">
+  <meta name="app-version" content="1.32">
   <script>
     (() => {
       document.documentElement.classList.add('app-launching');
@@ -906,6 +906,12 @@
 
     html.ios-installed-app .tetris-game-panel.is-fullscreen .tetris-game-board {
       width: min(100%, calc((var(--app-viewport-height, 100dvh) - 220px) / 2), calc(100vw - 24px));
+    }
+
+    @media (orientation: landscape) and (max-height: 500px) {
+      html.ios-installed-app .tetris-game-panel.is-fullscreen .tetris-game-board {
+        width: min(180px, calc((var(--app-viewport-height, 100dvh) - 120px) / 2), calc((100vw - 200px) / 2));
+      }
     }
 
     .light-theme[class~="bg-slate-900"] {
