@@ -11,7 +11,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="CoDH App">
   <meta name="application-name" content="CoDH App">
-  <meta name="app-version" content="1.22">
+  <meta name="app-version" content="1.23">
   <script>
     (() => {
       document.documentElement.classList.add('app-launching');
@@ -2029,6 +2029,17 @@
         /^\d{4}-\d{2}-\d{2}$/.test(dateValue) &&
         dateValue.slice(0, 7) === currentMonthBounds.monthValue
       );
+      const getRequestActionDate = request => {
+        if (request?.type === 'Exchange of Duty') return request.startDate;
+        if (request?.type === 'Missed Log') return request.logDate;
+        if (request?.type === 'Extra Off Request') return request.extraOffDate;
+        if (request?.type === 'Leave') return request.startDate;
+        return null;
+      };
+      const isRequestLapsed = request =>
+        getRequestActionDate(request)
+          ? !isDateInCurrentMonth(getRequestActionDate(request))
+          : false;
       const welcomeDisplayName = currentUser?.firstName || splitProfileName(currentUser).firstName || currentUser?.name || 'there';
       const weatherDescriptions = {
         0: 'Clear sky',
@@ -3209,10 +3220,17 @@
       // --- WORKFLOW APPROVAL LOGIC ---
       const handleApprovalAction = async (reqId, actionType) => {
         const timeNow = new Date().toLocaleString();
+        const approvedAt = new Date().toISOString();
         let updatedReq = null;
 
         const targetReq = requests.find(r => r.id === reqId);
         if (!targetReq) return;
+        if (isRequestLapsed(targetReq)) {
+          return triggerToast(
+            `Request ${targetReq.id} cannot be approved because its ${getRequestActionDate(targetReq)} date has moved outside the current month. It remains in the records for reporting.`,
+            'error'
+          );
+        }
 
         let nextStatus = targetReq.status;
         let nextDeptApproval = targetReq.deptHeadApproval;
@@ -3283,8 +3301,10 @@
           finalApproval: nextFinalApproval,
           approvedBy: currentUser.name,
           approvalDate: timeNow,
+          approvedAt,
           logs: [...(targetReq.logs || []), {
             date: timeNow,
+            approvedAt,
             action: `${actionType} by ${currentUser.name} (${reviewRole})`,
             user: currentUser.name,
             ...(actionType === 'APPROVE' ? { signature: currentUser.signature } : {})
@@ -6855,6 +6875,11 @@
                         )}
                         <p className="text-xs text-slate-300 bg-slate-900 p-2 rounded-lg">Reason: {req.reason}</p>
                         {req.extraOffDate && <div className="text-xs text-slate-300">Extra Off Date: <strong>{req.extraOffDate}</strong></div>}
+                        {isRequestLapsed(req) && (
+                          <div className="rounded-lg border border-rose-500/40 bg-rose-500/10 px-3 py-2 text-xs font-bold text-rose-300">
+                            Lapsed: this request cannot be approved after the month changes. Retained for reporting.
+                          </div>
+                        )}
                         {req.attachmentId && <div className="text-xs"><AttachmentLink req={req} /></div>}
 
                         {/* STAGE STATUS */}
@@ -7311,6 +7336,14 @@
                   <div>Section: <strong>{selectedRequestForModal.section}</strong></div>
                   <div>Date Filed: {selectedRequestForModal.dateFiled}</div>
                   <div>Status: <StatusBadge status={selectedRequestForModal.status} /></div>
+                  {selectedRequestForModal.approvedAt && (
+                    <div>Approved / Updated Date and Time: <strong>{new Date(selectedRequestForModal.approvedAt).toLocaleString()}</strong></div>
+                  )}
+                  {isRequestLapsed(selectedRequestForModal) && (
+                    <div className="rounded-xl border border-rose-500/40 bg-rose-500/10 p-3 text-rose-300">
+                      This request has lapsed and cannot be approved after the month changes. It remains available for reporting.
+                    </div>
+                  )}
                   {selectedRequestForModal.type === 'Exchange of Duty' && (
                     <div className="p-3 bg-slate-950 rounded-xl border border-slate-800 text-slate-300 space-y-1">
                       <div>Date of exchange: <strong>{selectedRequestForModal.startDate || '—'}</strong></div>

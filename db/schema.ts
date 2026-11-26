@@ -97,8 +97,9 @@ export interface RequestDocument {
   finalApproval?: string | null;
   approvedBy?: string | null;
   approvalDate?: string | null;
+  approvedAt?: string | null;
   taggedUsers?: string[] | null;
-  logs?: { date: string; action: string; user: string; userId?: string; signature?: string }[] | null;
+  logs?: { date: string; approvedAt?: string; action: string; user: string; userId?: string; signature?: string }[] | null;
   createdAt: Date;
 }
 
